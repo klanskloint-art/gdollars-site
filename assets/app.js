@@ -589,7 +589,7 @@
 
     let view;
     if (hash === "home") view = viewHome();
-    else if (hash === "catalog" || hash.startsWith("catalog-")) view = viewCatalogPont(hash);
+    else if (hash === "catalog" || hash.startsWith("catalog-")) view = matchMedia("(max-width: 900px)").matches ? viewCatalog(hash === "catalog-wear" ? "catalog" : hash) : viewCatalogPont(hash);
     else if (hash.startsWith("p-")) view = viewProduct(hash.slice(2));
     else if (hash === "cart") view = viewCart();
     else if (hash === "checkout") view = viewCheckout();

@@ -2929,7 +2929,7 @@ body.is-sale .sale-land { padding-top: 34px; }
 .srch-dept { gap: 6px; font: 600 12.5px/1.2 Inter, sans-serif; max-width: 92px; text-align: center; }
 .srch-dept-pic { width: 84px; height: 84px; border-radius: 14px; }
 @media (max-width: 900px) { .srch-dept-pic { width: 72px; height: 72px; } .srch-dept { max-width: 78px; font-size: 12px; } }
-.srch-grid { grid-template-columns: 220px minmax(0, 1fr); gap: 28px; }
+@media (min-width: 901px) { .srch-grid { grid-template-columns: 220px minmax(0, 1fr); gap: 28px; } }
 .srch-side h3 { font: 700 14px Inter, sans-serif; margin: 4px 0 10px; }
 .srch-price { margin-bottom: 20px; gap: 6px; }
 .srch-price input { height: 38px; border-radius: 10px; padding: 0 10px; font-size: 13.5px; }
@@ -3025,4 +3025,21 @@ body.is-sale .sale-land { padding-top: 34px; }
 @media (max-width: 900px) {
   body:has(.srch-msearch) .hdr-row > .search { display: none !important; }
   .srch-rec h2 { font-size: 20px; }
+}
+
+@media (max-width: 900px) { .srch-grid { grid-template-columns: minmax(0, 1fr) !important; } }
+
+/* v168: desktop like Pont — wider page, search on the right and a bit smaller, more items per row */
+@media (min-width: 1024px) {
+  .wrap { max-width: 1600px; padding-left: 32px; padding-right: 32px; }
+  .hdr-row > .search { order: 20; flex: 0 0 520px !important; max-width: 520px !important; margin: 0 0 0 auto !important; }
+  .hdr-row > .search input { height: 44px !important; font-size: 15px !important; }
+  .hdr-row { row-gap: 10px !important; }
+  #srCards { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+@media (min-width: 1400px) {
+  #srCards { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  .hsec .rail { grid-auto-columns: calc((100% - 80px) / 6) !important; }
+  .brail { grid-auto-columns: calc((100% - 176px) / 12) !important; }
+  .grid:not(.srch-cards) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
