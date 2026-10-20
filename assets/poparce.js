@@ -26,12 +26,18 @@
   const fresh = (e, ttl) => e && Date.now() - (e.t || 0) < ttl;
 
   // ---------- requests (max 3 at a time) ----------
-  let running = 0; const queue = [];
+  // Poparce limit: 3 requests per second → start at most one request every 400 ms.
+  let running = 0, lastStart = 0, timer = null; const queue = [];
   function pump() {
-    while (running < 3 && queue.length) {
-      const job = queue.shift(); running++;
+    if (timer || !queue.length || running >= 2) return;
+    const wait = Math.max(0, lastStart + 400 - Date.now());
+    timer = setTimeout(() => {
+      timer = null;
+      if (!queue.length || running >= 2) return;
+      const job = queue.shift(); running++; lastStart = Date.now();
       job().finally(() => { running--; pump(); });
-    }
+      pump();
+    }, wait);
   }
   function get(path, params) {
     if (!ON) return Promise.reject(new Error("no token"));
