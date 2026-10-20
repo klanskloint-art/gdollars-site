@@ -2740,3 +2740,14 @@ body.is-sale .sale-land { padding-top: 34px; }
 }
 #srCards { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 22px 16px !important; }
 @media (max-width: 900px) { #srCards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 18px 10px !important; } }
+
+/* Bigger, crisper brand logos (v148) */
+.blogo { width: 92px !important; height: 92px !important; border-radius: 22px !important; filter: saturate(1.2) contrast(1.04); box-shadow: 0 0 0 1px rgba(0,0,0,.05), 0 8px 20px rgba(0,0,0,.09); }
+.br-card-mark img.blogo { max-width: none; max-height: none; }
+.btile-box { height: 104px !important; }
+.btile-box .blogo { width: 80px !important; height: 80px !important; border-radius: 20px !important; }
+@media (min-width: 761px) {
+  .blogo { width: 116px !important; height: 116px !important; border-radius: 28px !important; }
+  .btile-box { height: 124px !important; }
+  .btile-box .blogo { width: 96px !important; height: 96px !important; border-radius: 24px !important; }
+}
