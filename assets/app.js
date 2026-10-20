@@ -67,7 +67,10 @@
     if (/bag|backpack|tote|duffel|crossbody|shoulder|waist|pouch|сумк|рюкзак/.test(n)) return "bags";
     return "accessories";
   }
-  const PRODUCTS = (window.GD_PRODUCTS || []).concat(window.GD_FEED || []).map(p => Object.assign({}, p, { category: accSub(p) }))
+  // Real Poizon imports replace generated look-alikes of the same brand + model.
+  const POIZON_ITEMS = window.GDPoizon ? window.GDPoizon.storeItems() : [];
+  const PZ_KEYS = new Set(POIZON_ITEMS.map(p => (p.brand + "|" + p.name).toLowerCase()));
+  const PRODUCTS = POIZON_ITEMS.concat((window.GD_PRODUCTS || []).filter(p => !(p.est && PZ_KEYS.has((p.brand + "|" + p.name).toLowerCase())))).concat(window.GD_FEED || []).map(p => Object.assign({}, p, { category: accSub(p) }))
     .map((p, i) => Object.assign({}, p, {
       price: officialBased(p) || (typeof p.basePrice === "number" ? retailPrice(p.category, p.basePrice, p.currency) : retailPrice(p.category, p.dewuCny)),
       order: i, tags: p.tags || [], images: p.images || [], sizes: p.sizes && p.sizes.length ? p.sizes : ["One size"]
@@ -603,6 +606,7 @@
     else if (hash === "favorites") view = viewFavs();
     else if (hash.startsWith("order-")) view = viewOrder(hash.slice(6));
     else if (hash === "admin" && CFG.adminPage) view = viewAdmin();
+    else if (hash === "admin-import" && CFG.adminPage) view = viewAdminImport();
     else if (hash === "link") view = viewLink();
     else if (hash === "delivery") view = viewDelivery();
     else if (hash === "contacts") view = viewContacts();
@@ -2974,6 +2978,7 @@
     const count = r => ORDERS.filter(o => ROLE_TASKS[r].includes(o.status)).length;
     const html = `<section class="wrap page">
       <div class="page-head"><h1>${t("adm_title")}</h1><p class="muted prose">${t("adm_note")}</p></div>
+      <a class="btn btn-outline pz-link" href="#admin-import">⇪ ${state.lang === "ru" ? "Импорт товаров с Poizon" : "Import products from Poizon"}</a>
       <div class="seg adm-roles" role="group" aria-label="${t("adm_roles")}">
         ${ROLES.map(r => `<button type="button" data-action="adm-role" data-r="${r}" aria-pressed="${r === role}">${t("role_" + r)}${count(r) ? ` <span class="badge">${count(r)}</span>` : ""}</button>`).join("")}
       </div>
@@ -2996,6 +3001,95 @@
             pendingPhotos[input.dataset.oid] = await Promise.all(files.map(f => readPhoto(f, 900)));
           } catch (err) { pendingPhotos[input.dataset.oid] = []; }
           rerender();
+        });
+      }
+    };
+  }
+
+
+  // ===== Admin: Poizon import with visible brand filtering =====
+  function viewAdminImport() {
+    try { localStorage.setItem("gd_owner", "1"); } catch (e) {}
+    const PZ = window.GDPoizon;
+    const saved = PZ && PZ.loadSaved();
+    const myBrands = (window.GD_BRANDS || []).length;
+    const fmt = n => Number(n || 0).toLocaleString("ru-RU");
+    const html = `<section class="wrap page pz">
+      <a class="back" href="#admin">← ${t("adm_title")}</a>
+      <div class="page-head"><h1>Импорт товаров с Poizon</h1>
+        <p class="muted prose">Загрузите JSON-выгрузку из официального источника Poizon (API партнёра, фид или ваш экспорт). Импортируются только товары брендов, которые уже есть в магазине (${fmt(myBrands)}), остальные пропускаются. Для каждого товара берутся все фото, модель, артикул и актуальная цена.</p></div>
+      <div class="pz-box">
+        <label class="pz-drop" id="pzDrop"><input type="file" id="pzFile" accept=".json,application/json" hidden>
+          <b>Выбрать JSON-файл</b><span>или перетащите его сюда</span></label>
+        <div class="pz-row"><input id="pzUrl" type="url" placeholder="или ссылка на JSON (API с разрешённым доступом)"><button type="button" class="btn btn-ghost" id="pzLoadUrl">Загрузить</button></div>
+        <label class="pz-chk"><input type="checkbox" id="pzFen"> Цены в фэнях (делить на 100)</label>
+      </div>
+      <div class="pz-prog" id="pzProg" hidden><div class="pz-bar"><i id="pzBarFill"></i></div><span id="pzProgT"></span></div>
+      <div id="pzOut">${saved && saved.items && saved.items.length ? `<p class="muted">Последний импорт: ${new Date(saved.importedAt).toLocaleString("ru-RU")} · ${esc(saved.source || "")} · ${fmt(saved.items.length)} товаров (видны только на этом устройстве, пока файл не опубликован).</p>` : ""}</div>
+    </section>`;
+    return {
+      html, title: "Импорт с Poizon",
+      mount(root) {
+        if (!PZ) { $("#pzOut", root).innerHTML = `<div class="empty"><p>Модуль импорта не загрузился.</p></div>`; return; }
+        let last = null;
+        const prog = $("#pzProg", root), fill = $("#pzBarFill", root), progT = $("#pzProgT", root), out = $("#pzOut", root);
+        const render = res => {
+          last = res;
+          const st = res.stats;
+          const ign = Object.entries(res.ignored).sort((a, b) => b[1] - a[1]);
+          const inv = Object.entries(res.invalidReasons);
+          out.innerHTML = `
+            <div class="pz-stats">
+              <div><b>${fmt(st.total)}</b><span>в файле</span></div>
+              <div class="ok"><b>${fmt(st.matched)}</b><span>импортировано</span></div>
+              <div class="skip"><b>${fmt(st.skipped)}</b><span>чужие бренды — пропущено</span></div>
+              <div class="bad"><b>${fmt(st.invalid + st.duplicates)}</b><span>без данных / дубли</span></div>
+            </div>
+            <div class="pz-actions">
+              <button type="button" class="btn btn-primary" id="pzSave"${res.items.length ? "" : " disabled"}>Показать в магазине (на этом устройстве)</button>
+              <button type="button" class="btn btn-outline" id="pzExport"${res.items.length ? "" : " disabled"}>Скачать файл data/poizon-import.js</button>
+              <button type="button" class="btn btn-ghost" id="pzClear">Очистить импорт</button>
+            </div>
+            <p class="muted small">Чтобы товары увидели все покупатели, пришлите скачанный файл в чат — его добавят на сайт.</p>
+            <div class="pz-cols">
+              <div class="pz-card"><h3>Пропущенные бренды (${fmt(ign.length)})</h3>
+                ${ign.length ? `<ul class="pz-ign">${ign.slice(0, 40).map(([b, n]) => `<li><span>${esc(b)}</span><i>${fmt(n)}</i></li>`).join("")}</ul>${ign.length > 40 ? `<p class="muted small">…и ещё ${fmt(ign.length - 40)}</p>` : ""}` : `<p class="muted small">Нет — все бренды из файла есть в магазине.</p>`}
+                ${inv.length ? `<h3>Отклонено</h3><ul class="pz-ign">${inv.map(([w, n]) => `<li><span>${esc(w)}</span><i>${fmt(n)}</i></li>`).join("")}${st.duplicates ? `<li><span>дубли артикула</span><i>${fmt(st.duplicates)}</i></li>` : ""}</ul>` : ""}
+              </div>
+              <div class="pz-card pz-wide"><h3>Импортированные товары (${fmt(res.items.length)})</h3>
+                ${res.items.length ? `<div class="pz-tbl"><table><thead><tr><th></th><th>Бренд</th><th>Модель</th><th>Артикул</th><th>Фото</th><th>Цена ¥</th><th>В магазине</th></tr></thead><tbody>
+                  ${res.items.slice(0, 200).map(p => `<tr><td><img src="${esc(p.images[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"></td><td>${esc(p.brand)}</td><td>${esc(p.name)}</td><td class="mono">${esc(p.article)}</td><td>${p.images.length}</td><td>${fmt(p.dewuCny)}</td><td>${money(retailPrice(p.category, p.dewuCny) || 0)}</td></tr>`).join("")}
+                </tbody></table></div>${res.items.length > 200 ? `<p class="muted small">Показаны первые 200 из ${fmt(res.items.length)}.</p>` : ""}` : `<p class="muted small">Подходящих товаров нет.</p>`}
+              </div>
+            </div>`;
+        };
+        const start = async (text, source) => {
+          let json;
+          try { json = JSON.parse(text); } catch (e) { out.innerHTML = `<div class="empty"><p>Это не JSON. Проверьте файл.</p></div>`; return; }
+          prog.hidden = false; fill.style.width = "0%"; progT.textContent = "Фильтрация по брендам…";
+          const res = await PZ.runImport(json, { fen: $("#pzFen", root).checked, source }, (done, total, st) => {
+            fill.style.width = (total ? Math.round(done / total * 100) : 100) + "%";
+            progT.textContent = `Проверено ${fmt(done)} из ${fmt(total)} · подходит ${fmt(st.matched)} · пропущено ${fmt(st.skipped)}`;
+          });
+          if (!res.stats.total) { out.innerHTML = `<div class="empty"><p>В файле не найден список товаров (ожидается массив или поле items / data / list).</p></div>`; return; }
+          render(res);
+        };
+        const readFile = f => { if (!f) return; const r = new FileReader(); r.onload = () => start(String(r.result), f.name); r.readAsText(f); };
+        $("#pzFile", root).addEventListener("change", e => readFile(e.target.files[0]));
+        const drop = $("#pzDrop", root);
+        drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("is-over"); });
+        drop.addEventListener("dragleave", () => drop.classList.remove("is-over"));
+        drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("is-over"); readFile(e.dataTransfer.files[0]); });
+        $("#pzLoadUrl", root).addEventListener("click", async () => {
+          const u = $("#pzUrl", root).value.trim();
+          if (!/^https:\/\//i.test(u)) { toast("Нужна ссылка https://"); return; }
+          try { const r = await fetch(u); if (!r.ok) throw new Error(r.status); start(await r.text(), u); }
+          catch (e) { out.innerHTML = `<div class="empty"><p>Не удалось загрузить ссылку (${esc(String(e.message || e))}). Источник может не разрешать доступ из браузера — скачайте JSON и выберите файл.</p></div>`; }
+        });
+        out.addEventListener("click", e => {
+          if (e.target.closest("#pzSave") && last) { toast(PZ.save(last) ? "Сохранено. Обновите страницу, чтобы увидеть товары в магазине." : "Слишком много для памяти браузера — скачайте файл."); }
+          if (e.target.closest("#pzExport") && last) PZ.exportFile(last);
+          if (e.target.closest("#pzClear")) { PZ.clear(); last = null; out.innerHTML = ""; prog.hidden = true; toast("Импорт очищен"); }
         });
       }
     };
