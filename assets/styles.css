@@ -2867,3 +2867,10 @@ body.is-sale .sale-land { padding-top: 34px; }
   .rail-nav-next { right: -22px; } .rail-nav-prev { left: -22px; }
 }
 @media (max-width: 760px) { .rail-nav { width: 34px; height: 34px; } .rail-nav-next { right: -6px; } .rail-nav-prev { left: -6px; } .rail-nav svg { width: 18px; height: 18px; } }
+
+/* v155: logos like Pont — just the mark on white, no frame/shadow, fills the tile */
+.btile-box .blogo, .br-card-mark .blogo { width: auto !important; height: auto !important; max-width: 78% !important; max-height: 78% !important;
+  border-radius: 6px !important; box-shadow: none !important; filter: none !important; background: transparent !important; mix-blend-mode: multiply; object-fit: contain; }
+.btile-box .blogo { max-height: 52px !important; }
+.br-card-mark .blogo { max-height: 96px !important; max-width: 70% !important; }
+@media (min-width: 761px) { .btile-box .blogo { max-height: 64px !important; } .br-card-mark .blogo { max-height: 120px !important; } }

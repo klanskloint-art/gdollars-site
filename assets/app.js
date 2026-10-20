@@ -943,7 +943,7 @@
     const local = (window.BRAND_LOGOS_LOCAL || {})[name] || ((window.GD_BRANDS || []).find(b => b.name === name) || {}).logo;
     const dom = (window.GD_BRAND_DOMAINS || {})[name];
     const tok = CFG.logoDevToken;
-    const src = local || (tok && dom ? `https://img.logo.dev/${encodeURIComponent(dom)}?token=${encodeURIComponent(tok)}&size=200&format=webp&retina=true&fallback=404` : "");
+    const src = local || (tok && dom ? `https://img.logo.dev/${encodeURIComponent(dom)}?token=${encodeURIComponent(tok)}&size=200&format=png&retina=true&fallback=404` : "");
     if (!src) return wordmark(name);
     return `<img class="blogo ${cls || ""}" src="${esc(src)}" alt="" ${eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"'} decoding="async" width="80" height="80" onerror="this.hidden=true;this.nextElementSibling.hidden=false">${wordmark(name).replace("<span ", "<span hidden ")}`;
   }
