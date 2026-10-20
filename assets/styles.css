@@ -3026,22 +3026,3 @@ body.is-sale .sale-land { padding-top: 34px; }
   body:has(.srch-msearch) .hdr-row > .search { display: none !important; }
   .srch-rec h2 { font-size: 20px; }
 }
-
-/* v167: brand banner built from the logo (logo centred, its edge colours stretched to the sides) */
-.bh3 { position: relative; height: 200px; margin: 8px 0 14px; border-radius: 22px; overflow: hidden; background: #F4F4F4; display: grid; place-items: center; border: 1px solid #EEE; }
-.bh3[hidden], .bh3-meta[hidden], .bh2[hidden] { display: none !important; }
-.bh3-bg { position: absolute; inset: 0; opacity: 0; transition: opacity .3s; }
-.bh3.is-ready .bh3-bg { opacity: 1; }
-.bh3.is-smear .bh3-bg { background-size: 3px 100% !important; background-repeat: repeat-x !important; filter: blur(6px) saturate(1.1); transform: scale(1.1); }
-.bh3-logo { position: relative; height: 100%; max-width: 70%; object-fit: contain; opacity: 0; transition: opacity .3s; }
-.bh3.is-ready .bh3-logo { opacity: 1; }
-@media (min-width: 761px) { .bh3 { height: 260px; } }
-.bh3-meta { margin: 0 0 14px; }
-.bh3-meta h1 { font: 800 clamp(26px, 5vw, 40px)/1.1 var(--body, Inter), sans-serif; letter-spacing: -.03em; margin: 4px 0 6px; }
-.bh3-meta p { margin: 0; }
-.bh3-meta .ad-eyebrow { color: #8A8A8A; }
-/* banner height follows the logo so the side bands line up exactly with it */
-.bh3 { height: auto !important; display: block; border: 0; background: transparent; min-height: 120px; }
-.bh3-logo { display: block; margin: 0 auto; width: auto; height: auto; max-width: 100%; max-height: 200px; min-height: 120px; object-fit: contain; }
-@media (min-width: 761px) { .bh3-logo { max-height: 260px; min-height: 160px; } }
-.bh3 { border: 1px solid #EDEDED !important; border-radius: 22px; overflow: hidden; }

@@ -935,13 +935,6 @@
   const ICO_TAG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12.3V4.5a1 1 0 0 1 1-1h7.8l8.2 8.2a1.4 1.4 0 0 1 0 2l-6.3 6.3a1.4 1.4 0 0 1-2 0Z"/><circle cx="8" cy="8" r="1.4"/></svg>`;
   const ICO_CROWN = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 8l4 4 4-6 4 6 4-4-1.6 10H5.6L4 8Z"/><path d="M6 20.5h12"/></svg>`;
 
-  function brandLogoSrcs(name) {
-    const local = (window.BRAND_LOGOS_LOCAL || {})[name] || ((window.GD_BRANDS || []).find(b => b.name === name) || {}).logo;
-    const dom = (window.GD_BRAND_DOMAINS || {})[name];
-    const ldev = CFG.logoDevToken && dom ? `https://img.logo.dev/${encodeURIComponent(dom)}?token=${encodeURIComponent(CFG.logoDevToken)}&size=400&format=png&retina=true&fallback=404` : "";
-    const bf = CFG.brandfetchClientId && dom ? `https://cdn.brandfetch.io/domain/${encodeURIComponent(dom)}/h/480/w/960/theme/dark/fallback/404/logo.png?c=${encodeURIComponent(CFG.brandfetchClientId)}` : "";
-    return [local, bf, ldev].filter(Boolean);
-  }
   function brandLogo(name, cls, eager) {
     const local = (window.BRAND_LOGOS_LOCAL || {})[name] || ((window.GD_BRANDS || []).find(b => b.name === name) || {}).logo;
     const dom = (window.GD_BRAND_DOMAINS || {})[name];
@@ -1334,10 +1327,8 @@
     const from = items.length ? Math.min.apply(null, items.map(p => p.price)) : null;
     const html = `<section class="wrap page">
       <a class="back" href="#brands">← ${t("nav_brands")}</a>
-      ${brandLogoSrcs(name).length ? `<div class="bh3" id="bh3"><div class="bh3-bg" id="bh3Bg"></div><img class="bh3-logo" id="bh3Logo" alt="${esc(name)}" referrerpolicy="strict-origin-when-cross-origin" fetchpriority="high"></div>
-      <div class="bh3-meta" id="bh3Meta"><span class="ad-eyebrow">${info && info.premium ? t("tier_premium") : t("brand_eyebrow")}</span><h1>${esc(name)}</h1>
-        <p class="muted">${items.length ? `${plural(items.length, "items")} · ${t("from", { price: money(from) })}` : t("br_order")}</p></div>` : ""}
-      <div class="brand-hero bh2"${brandLogoSrcs(name).length ? " hidden" : ""} id="bh2" style="${brandHeroStyle(name)}">
+      <div class="brand-hero bh2" style="${brandHeroStyle(name)}">
+        ${CFG.logoDevToken && (window.GD_BRAND_DOMAINS || {})[name] ? `<span class="bh-logo">${brandLogo(name, "", true)}</span>` : ""}
         <span class="ad-eyebrow">${info && info.premium ? t("tier_premium") : t("brand_eyebrow")}</span>
         <h1>${esc(name)}</h1>
         <p>${items.length ? `${plural(items.length, "items")} · ${t("from", { price: money(from) })}` : t("br_order")}</p>
@@ -1348,44 +1339,7 @@
       </nav>
       <div id="brandBody"></div>` : `<div class="empty"><p>${t("brand_empty")}</p><a class="btn btn-primary" href="#link">${t("nav_link")}</a></div>`}
     </section>`;
-    return { html, title: name, mount() { state.brandName = name; mountBrandBanner(name); updateBrandPage(); } };
-  }
-
-
-  // Brand banner made from the logo itself: the logo sits in the middle and its edge colours
-  // are stretched to both sides (e.g. Diesel: white – red – white bands).
-  function mountBrandBanner(name) {
-    const box = $("#bh3"), img = $("#bh3Logo"), bg = $("#bh3Bg");
-    if (!box || !img) return;
-    const srcs = brandLogoSrcs(name);
-    let k = 0;
-    const fail = () => { box.hidden = true; const m = $("#bh3Meta"); if (m) m.hidden = true; const h = $("#bh2"); if (h) h.hidden = false; };
-    const edgeBands = src => new Promise(res => {
-      const im = new Image(); im.crossOrigin = "anonymous"; im.referrerPolicy = "strict-origin-when-cross-origin";
-      im.onload = () => {
-        try {
-          const H = 48, c = document.createElement("canvas"); c.width = 4; c.height = H;
-          const x = c.getContext("2d", { willReadFrequently: true });
-          x.drawImage(im, 0, 0, 2, im.naturalHeight, 0, 0, 2, H);           // left edge column
-          x.drawImage(im, im.naturalWidth - 2, 0, 2, im.naturalHeight, 2, 0, 2, H); // right edge column
-          const d = x.getImageData(0, 0, 4, H).data, L = [], R = [];
-          const px = (i) => { const a = d[i + 3] / 255; const m = v => Math.round(v * a + 255 * (1 - a)); return `rgb(${m(d[i])},${m(d[i + 1])},${m(d[i + 2])})`; };
-          for (let y = 0; y < H; y++) { L.push(`${px((y * 4) * 4)} ${(y / (H - 1) * 100).toFixed(1)}%`); R.push(`${px((y * 4 + 3) * 4)} ${(y / (H - 1) * 100).toFixed(1)}%`); }
-          res(`linear-gradient(to bottom, ${L.join(",")}) left / 50.5% 100% no-repeat, linear-gradient(to bottom, ${R.join(",")}) right / 50.5% 100% no-repeat`);
-        } catch (e) { res(null); }
-      };
-      im.onerror = () => res(null);
-      im.src = src;
-    });
-    img.onerror = () => { k++; if (k < srcs.length) img.src = srcs[k]; else fail(); };
-    img.onload = async () => {
-      if (img.naturalWidth < 8) { img.onerror(); return; }
-      const g = await edgeBands(img.src);
-      if (g) { bg.style.background = g; box.classList.add("is-bands"); }
-      else { bg.style.backgroundImage = `url("${img.src.replace(/"/g, "%22")}")`; box.classList.add("is-smear"); }
-      box.classList.add("is-ready");
-    };
-    img.src = srcs[0];
+    return { html, title: name, mount() { state.brandName = name; updateBrandPage(); } };
   }
 
   function updateBrandPage() {
