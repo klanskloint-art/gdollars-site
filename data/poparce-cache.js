@@ -1,4 +1,4 @@
-// Poizon data saved from #admin-import (checked: kids, no-price and wrong-colour items removed).
+// Poizon data saved from #admin-import (checked: kids, no-price and wrong items removed).
 window.GD_PP = {
  "s15": {
   "spuId": 92171936,
@@ -447,6 +447,87 @@ window.GD_PP = {
   },
   "soldOut": [],
   "minCny": 577,
+  "at": "2026-10-20"
+ },
+ "h1": {
+  "spuId": 14540665,
+  "article": "HJ1816-010",
+  "images": [
+   "https://cdn.poizon.com/pro-img/origin-img/20250321/17ddf8ae1799429cb342beed8b9b2968.jpg",
+   "https://cdn.poizon.com/pro-img/origin-img/20240806/3d93ddeb26494ca2bcda843edeefe296.jpg",
+   "https://cdn.poizon.com/pro-img/origin-img/20240829/50fc0f5bf1ba4d7185b33a152c8aaeb6.jpg",
+   "https://cdn.poizon.com/materialPicPath/4adbaf6760da4c2f8cda3ce6bd5da0a7.png",
+   "https://cdn.poizon.com/materialPicPath/fd2c90233db64179bb2f8b3f4b1530fa.png"
+  ],
+  "sizes": [
+   "2XL",
+   "3XL",
+   "L",
+   "M",
+   "S",
+   "XL",
+   "XS"
+  ],
+  "sizeCny": {
+   "2XL": 494,
+   "3XL": 494,
+   "L": 494,
+   "M": 494,
+   "S": 494,
+   "XL": 494,
+   "XS": 494
+  },
+  "soldOut": [],
+  "minCny": 494,
+  "at": "2026-10-20"
+ },
+ "s4": {
+  "spuId": 50210026,
+  "article": "HF5441-009",
+  "images": [
+   "https://cdn.poizon.com/pro-img/origin-img/20260430/0e262dcd4cb04ad0a49f7dd776f4c335.jpg",
+   "https://cdn.poizon.com/pro-img/origin-img/20260430/71253586d24344409604a04481415110.jpg",
+   "https://cdn.poizon.com/pro-img/origin-img/20260430/5e0a56060ca34ced9647b84be57e0309.jpg",
+   "https://cdn.poizon.com/pro-img/origin-img/20260430/93ce755e357c47568f744c906f1f6673.jpg",
+   "https://cdn.poizon.com/pro-img/origin-img/20260430/944eaaf6b84a425eb453efbd39f6373d.jpg",
+   "https://cdn.poizon.com/pro-img/origin-img/20260430/c82f9d24299047ae912099d09cf22be1.jpg"
+  ],
+  "sizes": [
+   "38.5",
+   "39",
+   "40",
+   "40.5",
+   "41",
+   "42",
+   "42.5",
+   "43",
+   "44",
+   "44.5",
+   "45",
+   "45.5",
+   "46",
+   "47",
+   "47.5"
+  ],
+  "sizeCny": {
+   "39": 1119,
+   "40": 1119,
+   "41": 1119,
+   "42": 1119,
+   "43": 1119,
+   "44": 1119,
+   "45": 1119,
+   "46": 1119,
+   "47": 1119,
+   "38.5": 1119,
+   "40.5": 1119,
+   "42.5": 1119,
+   "44.5": 1119,
+   "45.5": 1119,
+   "47.5": 1119
+  },
+  "soldOut": [],
+  "minCny": 1119,
   "at": "2026-10-20"
  }
 };
