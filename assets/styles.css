@@ -2831,3 +2831,39 @@ body.is-sale .sale-land { padding-top: 34px; }
 .dlv-hero { background: #F4F4F4 !important; }
 .dlv-hero > .wrap > p { color: #6B6B6B !important; }
 .dlv-step span { color: #7A7A7A !important; }
+
+/* v153: rail arrows (next/prev) in the middle of rails */
+.rail-wrap { position: relative; }
+.rail-nav { position: absolute; z-index: 3; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #fff; color: #111; display: grid; place-items: center; cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.14); transition: transform .15s, background .15s; }
+.rail-nav[hidden] { display: none; }
+.rail-nav:hover { background: #BDFF14; transform: scale(1.06); }
+.rail-nav-next { right: -8px; } .rail-nav-prev { left: -8px; }
+.rail-wrap:has(.brail) .rail-nav { top: 12px; }
+.rail-wrap:has(.rail) .rail-nav { top: 30%; transform: translateY(-50%); }
+.rail-wrap:has(.rail) .rail-nav:hover { transform: translateY(-50%) scale(1.06); }
+
+/* v153: desktop like Pont — white top, full menu in one line, search below, compact gender switch, whole rows */
+@media (min-width: 1024px) {
+  .appbar { display: none !important; }
+  .hdr-row { flex-wrap: wrap; row-gap: 16px; }
+  .hdr-links { flex: 1 1 auto; overflow-x: auto !important; -webkit-mask: none !important; mask: none !important; gap: 22px !important; padding-right: 0; }
+  .hdr-links a, .hdr-links a.hl-m { font: 500 15px/1.2 Inter, system-ui, sans-serif !important; color: #222 !important; letter-spacing: -.005em; }
+  .hdr-links a.hl-sale { color: #DD2048 !important; order: 1; }
+  .hdr-links a[href="#brands"] { order: 2; } .hdr-links a[href="#delivery"]:not(.hl-m) { order: 3; } .hdr-links a[href="#catalog-shoes"] { order: 4; }
+  .hdr-links a[href="#catalog"]:not([data-sort]) { order: 5; } .hdr-links a[href="#catalog-acc"] { order: 6; } .hdr-links a.hl-m[href="#delivery"] { order: 7; }
+  .hdr-links a[href="#contacts"] { order: 8; } .hdr-links a[data-sort] { order: 9; }
+  .hdr-tools { order: 15; }
+  .hdr-row > .search { order: 20; flex: 0 0 100%; max-width: 770px; margin: 0 auto; }
+  .seg.seg-lg { width: max-content; margin-left: auto; margin-right: auto; padding: 4px; }
+  .seg.seg-lg button { padding: 8px 26px; font-size: 15px; min-height: 0; height: auto; }
+  .brail { grid-auto-columns: calc((100% - 144px) / 10) !important; gap: 16px !important; }
+  .btile-box { height: 84px !important; }
+  .btile-box .blogo { width: 64px !important; height: 64px !important; border-radius: 16px !important; }
+  .rail-more-btile .rail-more-ico { height: 84px !important; }
+  .rail-wrap:has(.brail) .rail-nav { top: 22px; }
+  .hsec .rail { grid-auto-columns: calc((100% - 64px) / 5) !important; }
+  .rail-nav { width: 46px; height: 46px; }
+  .rail-nav-next { right: -22px; } .rail-nav-prev { left: -22px; }
+}
+@media (max-width: 760px) { .rail-nav { width: 34px; height: 34px; } .rail-nav-next { right: -6px; } .rail-nav-prev { left: -6px; } .rail-nav svg { width: 18px; height: 18px; } }

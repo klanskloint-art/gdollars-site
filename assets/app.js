@@ -615,6 +615,7 @@
     main.innerHTML = view.html;
     document.title = view.title ? view.title + " · " + CFG.brand : CFG.brand;
     if (view.mount) view.mount(main);
+    enhanceRails(main);
     const ptOn = $(".ptab.is-on", main);
     if (ptOn) {
       // lime pill that slides from the previous tab to the new one, no page "reload" feel
@@ -682,6 +683,17 @@
     featPhone.forEach(([c, r], k) => { spans[k].mc = c; spans[k].mr = r; });
     fill(featPhone.length, 2, 4, "mc");
     return spans;
+  }
+
+  // Popular first, like on Pont: items with photos and "hit" tags, top brands, then a mix of brands (max 2 per brand).
+  function popularPick(list, n) {
+    const rank = b => { const i = BRAND_RANK.indexOf(b); return i < 0 ? 999 : i; };
+    const sorted = list.slice().sort((a, b) => ((b.images.length > 0) - (a.images.length > 0)) || (b.tags.includes("hit") - a.tags.includes("hit"))
+      || ((!b.est) - (!a.est)) || (rank(a.brand) - rank(b.brand)) || a.order - b.order);
+    const out = [], per = {};
+    for (const p of sorted) { if ((per[p.brand] || 0) < 2) { out.push(p); per[p.brand] = (per[p.brand] || 0) + 1; if (out.length >= n) return out; } }
+    for (const p of sorted) { if (!out.includes(p)) { out.push(p); if (out.length >= n) break; } }
+    return out;
   }
 
   function viewHome() {
@@ -797,7 +809,7 @@
       ${["shoes", "hoodies", "tshirts", "pants", "jackets", "shorts"].map(c => {
         const list = pool.filter(p => p.category === c);
         if (!list.length) return "";
-        const sorted = list.slice().sort((a, b) => (b.tags.includes("hit") - a.tags.includes("hit")) || a.order - b.order).slice(0, 12);
+        const sorted = popularPick(list, 12);
         return `<section class="sec hsec"><div class="wrap">
           <div class="hsec-head"><h2>${catName(c)}</h2><a class="pill-more" href="#catalog-${c}" data-action="prefilter" data-g="${g}">${t("see_all")} <span aria-hidden="true">›</span></a></div>
           <div class="rail">${sorted.map(card).join("")}${railMore("#catalog-" + c, t("see_all"), "card", g)}</div>
@@ -812,7 +824,7 @@
           <div class="dept-box">
             <div class="hsec-head"><h2>${t("dept_acc")}</h2><a class="pill-more" href="#catalog-acc">${t("see_all")} <span aria-hidden="true">›</span></a></div>
             <div class="chips dept-chips">${subs.map(c => `<a class="chip" href="#catalog-${c}">${catName(c)} <span class="chip-n">${acc.filter(p => p.category === c).length}</span></a>`).join("")}</div>
-            <div class="rail">${acc.slice().sort((a, b) => (b.tags.includes("hit") - a.tags.includes("hit")) || a.order - b.order).slice(0, 12).map(card).join("")}${railMore("#catalog-acc", t("see_all"), "card")}</div>
+            <div class="rail">${popularPick(acc, 12).map(card).join("")}${railMore("#catalog-acc", t("see_all"), "card")}</div>
           </div>
         </div></section>`;
       })()}
@@ -1148,6 +1160,22 @@
           : `<div class="sale-empty"><b>${t("sale_none_t")}</b><p>${t("sale_none_d")}</p><a class="btn cb-go" href="#catalog">${t("cta_catalog")}</a></div>`}
       </section>`
     };
+  }
+
+  // Round "next/prev" arrows in the middle of each horizontal rail; they scroll by one screen of whole items.
+  function enhanceRails(root) {
+    $$(".brail, .hsec .rail", root).forEach(r => {
+      if (r.parentNode.classList.contains("rail-wrap")) return;
+      const w = document.createElement("div"); w.className = "rail-wrap";
+      r.parentNode.insertBefore(w, r); w.appendChild(r);
+      const mk = dir => { const b = document.createElement("button"); b.type = "button"; b.className = "rail-nav rail-nav-" + dir; b.setAttribute("aria-label", dir === "next" ? "Дальше" : "Назад");
+        b.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${dir === "next" ? "M9 5l7 7-7 7" : "M15 5l-7 7 7 7"}"/></svg>`;
+        b.addEventListener("click", () => { const step = r.clientWidth + parseFloat(getComputedStyle(r).columnGap || 0); r.scrollBy({ left: dir === "next" ? step : -step, behavior: "smooth" }); });
+        w.appendChild(b); return b; };
+      const prev = mk("prev"), next = mk("next");
+      const upd = () => { prev.hidden = r.scrollLeft < 8; next.hidden = r.scrollLeft + r.clientWidth >= r.scrollWidth - 8; };
+      r.addEventListener("scroll", upd, { passive: true }); upd(); setTimeout(upd, 300);
+    });
   }
 
   // Most popular brands first on the home page rail.
