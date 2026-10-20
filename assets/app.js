@@ -781,15 +781,17 @@
       </div>
 
       ${(() => {
-        const inPool = new Set(pool.map(p => p.brand)); const top = BRANDS.filter(b => inPool.has(b.name))
-          .sort((a, b) => (b.popular - a.popular) || (b.count - a.count)).slice(0, 14);
+        const inPool = new Set(pool.map(p => p.brand));
+        const rank = n => { const i = BRAND_RANK.indexOf(n); return i < 0 ? 999 : i; };
+        const top = BRANDS.filter(b => inPool.has(b.name))
+          .sort((a, b) => (rank(a.name) - rank(b.name)) || (b.popular - a.popular) || (b.count - a.count)).slice(0, 15);
         if (!top.length) return "";
         return `<section class="sec hsec"><div class="wrap">
           <div class="hsec-head"><h2>${t("brands_title")}</h2><a class="pill-more" href="#brands">${t("see_all")} <span aria-hidden="true">›</span></a></div>
           <div class="brail">${top.map(b => `<button type="button" class="btile" data-action="brand" data-brand="${esc(b.name)}">
             <span class="btile-box">${CFG.logoDevToken || b.logo ? brandLogo(b.name, "", true) : `<span class="btile-word">${esc(b.name)}</span>`}</span>
             <span class="btile-name">${esc(b.name)}</span>
-          </button>`).join("")}</div>
+          </button>`).join("")}${railMore("#brands", t("see_all"), "btile")}</div>
         </div></section>`;
       })()}
 
@@ -799,7 +801,7 @@
         const sorted = list.slice().sort((a, b) => (b.tags.includes("hit") - a.tags.includes("hit")) || a.order - b.order).slice(0, 12);
         return `<section class="sec hsec"><div class="wrap">
           <div class="hsec-head"><h2>${catName(c)}</h2><a class="pill-more" href="#catalog-${c}" data-action="prefilter" data-g="${g}">${t("see_all")} <span aria-hidden="true">›</span></a></div>
-          <div class="rail">${sorted.map(card).join("")}</div>
+          <div class="rail">${sorted.map(card).join("")}${railMore("#catalog-" + c, t("see_all"), "card", g)}</div>
         </div></section>`;
       }).join("")}
 
@@ -811,14 +813,14 @@
           <div class="dept-box">
             <div class="hsec-head"><h2>${t("dept_acc")}</h2><a class="pill-more" href="#catalog-acc">${t("see_all")} <span aria-hidden="true">›</span></a></div>
             <div class="chips dept-chips">${subs.map(c => `<a class="chip" href="#catalog-${c}">${catName(c)} <span class="chip-n">${acc.filter(p => p.category === c).length}</span></a>`).join("")}</div>
-            <div class="rail">${acc.slice().sort((a, b) => (b.tags.includes("hit") - a.tags.includes("hit")) || a.order - b.order).slice(0, 12).map(card).join("")}</div>
+            <div class="rail">${acc.slice().sort((a, b) => (b.tags.includes("hit") - a.tags.includes("hit")) || a.order - b.order).slice(0, 12).map(card).join("")}${railMore("#catalog-acc", t("see_all"), "card")}</div>
           </div>
         </div></section>`;
       })()}
 
       ${fresh.length ? `<section class="sec hsec"><div class="wrap">
         <div class="hsec-head"><h2>${t("fresh")}</h2><a class="pill-more" href="#catalog" data-action="prefilter" data-sort="new" data-g="${g}">${t("see_all")} <span aria-hidden="true">›</span></a></div>
-        <div class="rail">${fresh.slice(0, 12).map(card).join("")}</div>
+        <div class="rail">${fresh.slice(0, 12).map(card).join("")}${railMore("#catalog", t("see_all"), "card", g)}</div>
       </div></section>` : ""}
 
       <div class="home-end"></div>`;
@@ -1147,6 +1149,17 @@
           : `<div class="sale-empty"><b>${t("sale_none_t")}</b><p>${t("sale_none_d")}</p><a class="btn cb-go" href="#catalog">${t("cta_catalog")}</a></div>`}
       </section>`
     };
+  }
+
+  // Most popular brands first on the home page rail.
+  const BRAND_RANK = ["Nike", "Adidas", "New Balance", "Jordan", "Asics", "Puma", "Converse", "Vans", "The North Face", "Stone Island", "Lacoste",
+    "Ralph Lauren", "Tommy Hilfiger", "Calvin Klein", "U.S. Polo Assn.", "Onitsuka Tiger", "Salomon", "On", "Hoka", "UGG", "Timberland", "Carhartt WIP",
+    "Stüssy", "Supreme", "Essentials", "Moncler", "Balenciaga", "Gucci", "Prada", "Levi's", "Champion", "Under Armour", "Reebok", "Dr. Martens", "Crocs"];
+  // Last tile of a horizontal rail: round arrow button that opens the full list.
+  function railMore(href, label, kind, g) {
+    return `<a class="rail-more rail-more-${kind}" href="${href}"${g ? ` data-action="prefilter" data-g="${esc(g)}"` : ""}>
+      <span class="rail-more-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <span class="rail-more-t">${label}</span></a>`;
   }
 
   // Brand page banner in the brand's own colours (bg, accent); unknown brands get a calm colour from a fixed palette.
