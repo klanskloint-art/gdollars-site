@@ -989,7 +989,11 @@
     const hasHash = base.some(b => brandLetter(b.name) === "#");
     if (state.brLetter !== "all" && !base.some(b => brandLetter(b.name) === state.brLetter)) state.brLetter = "all";
     $("#brLetters").innerHTML = ["all"].concat(letters.filter(l => l !== "#" || hasHash)).map(l => `<button type="button" class="br-let" data-action="br-letter" data-l="${esc(l)}" aria-pressed="${state.brLetter === l}">${l === "all" ? t("br_all") : esc(l)}</button>`).join("");
-    const list = base.filter(b => state.brLetter === "all" || brandLetter(b.name) === state.brLetter);
+    // Famous brands first (Pont's first row, then brands known in the CIS), lesser-known ones at the bottom.
+    const rk = n => { const i = BRAND_RANK.indexOf(n); return i < 0 ? 9999 : i; };
+    const tier = b => rk(b.name) < 9999 ? 0 : b.popular ? 1 : b.premium ? 2 : /^[^A-Za-z]/.test(b.name) ? 4 : 3;
+    const list = base.filter(b => state.brLetter === "all" || brandLetter(b.name) === state.brLetter)
+      .sort((a, b) => (tier(a) - tier(b)) || (rk(a.name) - rk(b.name)) || (b.count - a.count) || a.name.localeCompare(b.name, "en"));
     $$('[data-action="br-tab"]').forEach(x => x.setAttribute("aria-pressed", String(x.dataset.k === state.brTab)));
     grid.innerHTML = list.length ? list.map((b, bi) => `<button type="button" class="br-card" data-action="brand" data-brand="${esc(b.name)}" data-g="all">
         <span class="br-card-mark">${brandLogo(b.name, "", bi < 16)}</span>
@@ -1179,9 +1183,20 @@
   }
 
   // Most popular brands first on the home page rail.
-  const BRAND_RANK = ["Nike", "Adidas", "New Balance", "Jordan", "Asics", "Puma", "Converse", "Vans", "The North Face", "Stone Island", "Lacoste",
-    "Ralph Lauren", "Tommy Hilfiger", "Calvin Klein", "U.S. Polo Assn.", "Onitsuka Tiger", "Salomon", "On", "Hoka", "UGG", "Timberland", "Carhartt WIP",
-    "Stüssy", "Supreme", "Essentials", "Moncler", "Balenciaga", "Gucci", "Prada", "Levi's", "Champion", "Under Armour", "Reebok", "Dr. Martens", "Crocs"];
+  const BRAND_RANK = ["Nike", "Adidas", "New Balance", "Jordan", "Puma", "Zara", "Skechers", "Anta", "Li-Ning", "Crocs",
+    "Asics", "Converse", "Vans", "Reebok", "Fila", "The North Face", "Lacoste", "Tommy Hilfiger", "Calvin Klein", "Ralph Lauren",
+    "U.S. Polo Assn.", "Levi's", "Under Armour", "Columbia", "Timberland", "UGG", "Dr. Martens", "Birkenstock", "Onitsuka Tiger", "Salomon",
+    "Hoka", "On", "Stone Island", "Carhartt WIP", "Stüssy", "Supreme", "Essentials", "Champion", "Kappa", "Diesel",
+    "Guess", "Michael Kors", "Coach", "Mango", "H&M", "Uniqlo", "Bershka", "Pull&Bear", "Massimo Dutti", "Stradivarius",
+    "LC Waikiki", "Koton", "DeFacto", "Mavi", "Colin's", "Gucci", "Louis Vuitton", "Prada", "Balenciaga", "Dior",
+    "Moncler", "Burberry", "Versace", "Armani Exchange", "Emporio Armani", "Hugo Boss", "Casio", "Casio G-Shock", "Swatch", "Tissot",
+    "Fossil", "Apple", "Ray-Ban", "Oakley", "New Era", "MLB", "Ellesse", "Umbro", "Mizuno", "Saucony",
+    "Brooks", "Merrell", "Cat", "Napapijri", "Helly Hansen", "Arc'teryx", "Canada Goose", "Off-White", "Palm Angels", "Amiri",
+    "Golden Goose", "Alexander McQueen", "A Bathing Ape", "Celine", "Chanel", "Hermès", "Fendi", "Givenchy", "Valentino", "Saint Laurent",
+    "Bottega Veneta", "Loewe", "Miu Miu", "Tom Ford", "Rolex", "Omega", "Cartier", "Patek Philippe", "Tommy Jeans", "Calvin Klein Jeans",
+    "Polo Ralph Lauren", "Sergio Tacchini", "Lee", "Wrangler", "United Colors of Benetton", "Tom Tailor", "Jack & Jones", "Only", "Vero Moda", "Reserved",
+    "Gloria Jeans", "O'stin", "Befree", "Love Republic", "Zarina", "Sela", "Incity", "Lime", "12 Storeez", "Ecco",
+    "Geox", "Clarks", "Steve Madden", "Aldo", "Nine West", "Pandora", "Swarovski", "Samsonite", "Garmin"];
   // Last tile of a horizontal rail: round arrow button that opens the full list.
   function railMore(href, label, kind, g) {
     return `<a class="rail-more rail-more-${kind}" href="${href}"${g ? ` data-action="prefilter" data-g="${esc(g)}"` : ""}>
