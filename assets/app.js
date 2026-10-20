@@ -3135,7 +3135,8 @@
           <label>Раздел <select id="ppCat"><option value="shoes">Обувь</option><option value="wear">Одежда</option><option value="acc">Аксессуары</option><option value="all">Всё</option></select></label>
           <label>Сколько товаров <input id="ppN" type="number" min="1" max="5000" value="200"></label>
           <button type="button" class="btn btn-primary" id="ppRun">Загрузить</button><span class="muted small" id="ppProg"></span>
-          <button type="button" class="btn btn-outline" id="ppSave" hidden>Скачать data/poparce-cache.js</button></div>
+          <button type="button" class="btn btn-outline" id="ppSave" hidden>Скачать data/poparce-cache.js</button>
+          <button type="button" class="btn btn-ghost" id="ppRecover">Восстановить из памяти браузера (0 запросов)</button></div>
         <div class="pp-bulk"><b>Импорт каталога с Poizon по брендам (настоящие товары)</b><span class="muted small">1 запрос = до 100 товаров одного бренда в одной категории: фото, название, артикул. Точная цена и размеры подгружаются, когда покупатель откроет товар.</span>
           <label>Брендов (самые популярные) <input id="pcB" type="number" min="1" max="1196" value="30"></label>
           <label><input type="checkbox" class="pcC" value="shoes" checked> Обувь</label><label><input type="checkbox" class="pcC" value="hoodies" checked> Худи</label>
@@ -3236,6 +3237,23 @@
           const js = "// Real Poizon products imported in #admin-import. Replace data/poizon-catalog.js with this file.\nwindow.GD_PZCAT = " + JSON.stringify(pcItems) + ";\n";
           const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([js], { type: "text/javascript" })); a.download = "poizon-catalog.js";
           document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        });
+        $("#ppRecover", root).addEventListener("click", () => {
+          const c = GDPoparce.cacheDump(), all = window.GD_PRODUCTS || [];
+          const byRaw = {}; all.forEach(p => { byRaw[p.id] = p; });
+          let n = 0;
+          Object.keys(c).forEach(k => {
+            if (!k.startsWith("m:")) return;
+            const id = k.slice(2), m = c[k] && c[k].v, p = byRaw[id];
+            if (!m || !m.spuId || !p || ppData[id]) return;
+            const d = c["d:" + m.spuId] && c["d:" + m.spuId].v;
+            if (!d || !(d.minCny > 0) || !(d.images || []).length) return;
+            if (p.category === "shoes") { const nums = (d.sizes || []).map(parseFloat).filter(x => !isNaN(x)); if (nums.length && Math.max.apply(null, nums) < 37) return; }
+            ppData[id] = { spuId: d.spuId || m.spuId, article: d.article, images: d.images.slice(0, 8), sizes: d.sizes, sizeCny: d.sizeCny, soldOut: d.soldOut, minCny: d.minCny, at: new Date().toISOString().slice(0, 10) };
+            n++;
+          });
+          $("#ppProg", root).textContent = `Восстановлено ${n} товаров без запросов · всего ${Object.keys(ppData).length}`;
+          if (Object.keys(ppData).length) { $("#ppSave", root).hidden = false; $("#ppSave", root).click(); }
         });
         $("#ppSave", root).addEventListener("click", () => {
           const js = "// Poizon data saved from #admin-import. Replace data/poparce-cache.js with this file.\nwindow.GD_PP = " + JSON.stringify(ppData, null, 1) + ";\n";
