@@ -2977,3 +2977,52 @@ body.is-sale .sale-land { padding-top: 34px; }
 .pz-tbl td:nth-child(3) { white-space: normal; min-width: 160px; }
 .pz-tbl img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #F6F6F6; }
 .pz-actions .btn { min-height: 44px; height: auto; padding: 10px 18px; font-size: 14px; }
+
+/* v165: Pont mobile catalog: in-page search, sort + Filters bar, chips, recommendations, bottom-sheet filters */
+.srch-msearch, .srch-mbar, .srch-mchips, .srch-sheet-head, .srch-apply, .srch-sheet-back { display: none; }
+.srch-rec { display: none; }
+.srch-ftoggle { display: none !important; }
+@media (max-width: 900px) {
+  .srch-head h1 { font-size: 30px; margin-top: 6px; }
+  .srch-head p { display: none; }
+  .srch-msearch { display: flex; align-items: center; height: 54px; background: #F2F2F2; border-radius: 16px; padding: 0 8px 0 18px; margin: 12px 0 4px; }
+  .srch-msearch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: 400 17px Inter, sans-serif; }
+  .srch-msearch button { border: 0; background: none; width: 40px; height: 40px; display: grid; place-items: center; color: #111; }
+  .srch-depts { margin: 14px -16px 4px; padding: 0 16px; }
+  .srch-dept-pic { width: 104px; height: 104px; border-radius: 18px; }
+  .srch-dept { max-width: 108px; font-size: 14px; }
+  .srch-mbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0 14px; border-bottom: 1px solid #ECECEC; margin-top: 8px; }
+  .srch-msort { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .srch-msort select { border: 0; background: none; font: 500 16px Inter, sans-serif; color: #111; padding-right: 4px; max-width: 200px; }
+  .srch-mfbtn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; font: 500 16px Inter, sans-serif; color: #111; cursor: pointer; }
+  .srch-mfbtn b { min-width: 24px; height: 22px; padding: 0 7px; border-radius: 999px; background: #111; color: #fff; font: 700 12.5px/22px Inter, sans-serif; text-align: center; }
+  .srch-mfbtn b[hidden] { display: none; }
+  .srch-mchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 14px 0 6px; }
+  .srch-mchip { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #F2F2F2; font: 500 15px Inter, sans-serif; color: #111; }
+  .srch-rec { display: block; margin: 14px 0 6px; }
+  .srch-rec .hsec-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .srch-rec h2 { font: 800 22px/1.2 Inter, sans-serif; margin: 0; letter-spacing: -.02em; }
+  .srch-rec .muted { margin: 4px 0 0; font-size: 14px; }
+  .srch-bar { display: none; }
+  .srch-side { display: block !important; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1600; max-height: 86vh; overflow: auto; background: #fff;
+    border: 0 !important; border-radius: 22px 22px 0 0 !important; padding: 0 18px 18px !important; transform: translateY(105%); transition: transform .3s cubic-bezier(.2,.8,.2,1); box-shadow: 0 -10px 40px rgba(0,0,0,.18); }
+  .srch-side.is-open { transform: none; }
+  .srch-sheet-back { display: block; position: fixed; inset: 0; z-index: 1590; background: rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .srch-sheet-back.is-open { opacity: 1; pointer-events: auto; }
+  .srch-sheet-head { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; padding: 16px 0 12px; z-index: 1; font: 700 18px Inter, sans-serif; }
+  .srch-sheet-head button { border: 0; background: #F2F2F2; width: 34px; height: 34px; border-radius: 50%; font-size: 15px; }
+  .srch-apply { display: flex; width: 100%; justify-content: center; position: sticky; bottom: 0; margin-top: 14px; height: 52px; }
+  .srch-sizes { max-height: none; } .srch-brands { max-height: 300px; }
+}
+
+/* v165: brands page top row like Pont on desktop: pills left, search right */
+.br-top { display: grid; gap: 12px; }
+@media (min-width: 900px) {
+  .br-top { grid-template-columns: 1fr 360px; align-items: center; gap: 20px; }
+  .br-top .br-pills { margin: 0 !important; }
+  .br-top .br-search2 { margin: 0 !important; }
+}
+@media (max-width: 900px) {
+  body:has(.srch-msearch) .hdr-row > .search { display: none !important; }
+  .srch-rec h2 { font-size: 20px; }
+}

@@ -920,6 +920,8 @@
     const agg = {};
     PRODUCTS.forEach(p => { const a = agg[p.brand] || (agg[p.brand] = { n: 0, min: Infinity }); a.n++; if (p.price < a.min) a.min = p.price; });
     list.forEach(b => { const a = agg[b.name]; b.count = a ? a.n : 0; b.from = a ? a.min : null; });
+    const sum = {}; PRODUCTS.forEach(p => { sum[p.brand] = (sum[p.brand] || 0) + p.price; });
+    list.forEach(b => { b.budget = !b.premium && b.count > 0 && sum[b.name] / b.count < 1300000; });
     // Only brands that have items in the catalog are shown.
     return list.filter(b => b.count > 0).sort((a, b) => a.name.localeCompare(b.name, "en"));
   })();
@@ -930,6 +932,7 @@
 
   const ICO_GRID = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>`;
   const ICO_FIRE = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 21c-3.6 0-6-2.4-6-5.6 0-3.4 2.6-5 3.4-8.4 1.6 1.2 2.2 2.8 2.2 4.2 1-.6 1.8-1.8 2-3.2 2 1.6 4.4 4.2 4.4 7.4 0 3.2-2.4 5.6-6 5.6Z"/><path d="M12 21c-1.5 0-2.6-1-2.6-2.5 0-1.6 1.3-2.4 2.1-3.8 1.4 1 3.1 2.2 3.1 3.8 0 1.5-1.1 2.5-2.6 2.5Z"/></svg>`;
+  const ICO_TAG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12.3V4.5a1 1 0 0 1 1-1h7.8l8.2 8.2a1.4 1.4 0 0 1 0 2l-6.3 6.3a1.4 1.4 0 0 1-2 0Z"/><circle cx="8" cy="8" r="1.4"/></svg>`;
   const ICO_CROWN = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 8l4 4 4-6 4 6 4-4-1.6 10H5.6L4 8Z"/><path d="M6 20.5h12"/></svg>`;
 
   function brandLogo(name, cls, eager) {
@@ -956,13 +959,15 @@
     const html = `<section class="wrap page brands2">
       <nav class="crumbs" aria-label="${t("crumbs")}"><a href="#home">${t("tab_home")}</a><span>/</span><span>${t("nav_brands")}</span></nav>
       <div class="page-head"><h1>${t("nav_brands")}</h1></div>
+      <div class="br-top">
       <div class="br-pills" role="group" aria-label="${t("br_tabs")}">
-        ${[["all", ICO_GRID], ["popular", ICO_FIRE], ["premium", ICO_CROWN]].map(([k, ico]) => `<button type="button" class="br-pill" data-action="br-tab" data-k="${k}" aria-pressed="${state.brTab === k}">${ico}<span>${t("br_" + k)}</span></button>`).join("")}
+        ${[["all", ICO_GRID], ["popular", ICO_FIRE], ["premium", ICO_CROWN], ["budget", ICO_TAG]].map(([k, ico]) => `<button type="button" class="br-pill" data-action="br-tab" data-k="${k}" aria-pressed="${state.brTab === k}">${ico}<span>${k === "budget" ? (state.lang === "ru" ? "Бюджетные" : "Budget") : t("br_" + k)}</span></button>`).join("")}
       </div>
       <div class="br-search2">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4" stroke-linecap="round"/></svg>
         <label class="sr" for="brQ">${t("br_search_ph")}</label>
         <input id="brQ" type="search" autocomplete="off" placeholder="${t("br_search_ph")}" value="${esc(state.brQ)}">
+      </div>
       </div>
       <div class="br-letters2" id="brLetters" role="group" aria-label="${t("br_letters")}"></div>
       <div class="br-grid2" id="brGrid"></div>
@@ -1021,19 +1026,30 @@
       html: `<section class="wrap page srch">
         <nav class="crumbs" aria-label="${t("crumbs")}">${cfg.crumbs}</nav>
         <div class="srch-head"><h1>${cfg.h1}</h1><p class="muted" id="srCount"></p></div>
+        <form class="srch-msearch" id="srMs" role="search"><input id="srMq" type="search" placeholder="${L("Поиск", "Search")}" value="${esc(sf.mq || "")}" autocomplete="off"><button type="submit" aria-label="${L("Искать", "Search")}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg></button></form>
         <div class="srch-depts">${depts.map(([k, n, list]) => `<button type="button" class="srch-dept" data-dept="${k}" aria-pressed="${sf.dept === k}"><span class="srch-dept-pic">${media(list.find(p => p.images.length) || list[0], "sd-art")}</span><span>${n}</span></button>`).join("")}</div>
+        <div class="srch-mbar">
+          <label class="srch-msort"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 4v16M3.5 7.5 7 4l3.5 3.5M17 20V4M13.5 16.5 17 20l3.5-3.5"/></svg>
+            <select id="srSortM" aria-label="${L("Сортировка", "Sort")}">${[["rel", L("Релевантные", "Relevant")], ["asc", L("Сначала дешевле", "Cheapest first")], ["desc", L("Сначала дороже", "Most expensive first")], ["new", L("Новинки", "New")]].map(([k, n]) => `<option value="${k}" ${sf.sort === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+          <button type="button" class="srch-mfbtn" data-open="all">${L("Фильтры", "Filters")} <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><b id="srFn" hidden></b></button>
+        </div>
+        <div class="srch-mchips">${[["size", L("Размер", "Size")], ["price", L("Цена", "Price")], ["brand", L("Бренд", "Brand")]].map(([k, n]) => `<button type="button" class="srch-mchip" data-open="${k}">${n} <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`).join("")}</div>
+        <section class="srch-rec" id="srRec"></section>
         <div class="srch-grid">
-          <button type="button" class="srch-ftoggle" id="srFt">${L("Фильтры", "Filters")}</button>
+          <div class="srch-sheet-back" id="srBack"></div>
           <aside class="srch-side" id="srSide">
+            <div class="srch-sheet-head"><b>${L("Фильтры", "Filters")}</b><button type="button" id="srClose" aria-label="${L("Закрыть", "Close")}">✕</button></div>
+            <span id="srSecPrice"></span>
             <h3>${L("Цена, сум", "Price, UZS")}</h3>
             <div class="srch-price"><input id="srMin" inputmode="numeric" placeholder="${L("от", "from")}" value="${esc(sf.min)}"><span>—</span><input id="srMax" inputmode="numeric" placeholder="${L("до", "to")}" value="${esc(sf.max)}"></div>
-            <h3>${L("Размер", "Size")}</h3>
+            <h3 id="srSecSize">${L("Размер", "Size")}</h3>
             <div class="srch-sys">${["EU", "US", "RU", "UK"].map(x => `<button type="button" data-sys="${x}" aria-pressed="${sf.sys === x}">${x}</button>`).join("")}</div>
             <div class="srch-sizes" id="srSizes"></div>
-            <h3 class="srch-bh">${L("Бренды", "Brands")}</h3>
+            <h3 class="srch-bh" id="srSecBrand">${L("Бренды", "Brands")}</h3>
             <label class="srch-bq"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="srBq" type="search" placeholder="${L("Поиск бренда", "Search brand")}" value="${esc(sf.bq)}" autocomplete="off"></label>
             <div class="srch-brands" id="srBrands"></div>
             <button type="button" class="srch-reset" id="srReset">${L("Сбросить фильтры", "Reset filters")}</button>
+            <button type="button" class="btn btn-primary srch-apply" id="srApply"></button>
           </aside>
           <div class="srch-main">
             <div class="srch-bar"><select id="srSort" aria-label="${L("Сортировка", "Sort")}">
@@ -1045,6 +1061,14 @@
         </div>
       </section>`,
       mount(root) {
+        let recDone = false;
+        const side = $("#srSide", root);
+        const openSheet = sec => {
+          side.classList.add("is-open"); $("#srBack", root).classList.add("is-open"); document.body.classList.add("noscroll");
+          const target = { price: "#srSecPrice", size: "#srSecSize", brand: "#srSecBrand" }[sec];
+          if (target) setTimeout(() => { const el = $(target, root); if (el) side.scrollTop = el.offsetTop - 60; }, 30);
+        };
+        const closeSheet = () => { side.classList.remove("is-open"); $("#srBack", root).classList.remove("is-open"); document.body.classList.remove("noscroll"); };
         const num = v => Number(String(v).replace(/\D/g, "")) || 0;
         const draw = () => {
           const base = all.filter(inTile);
@@ -1063,7 +1087,14 @@
           else if (sf.sort === "desc") list = list.slice().sort((a, b) => b.price - a.price);
           else if (sf.sort === "new") list = list.slice().sort((a, b) => (b.tags.includes("new") - a.tags.includes("new")) || a.order - b.order);
           else list = list.slice().sort((a, b) => (b.images.length > 0) - (a.images.length > 0) || (b.tags.includes("hit") - a.tags.includes("hit")) || a.order - b.order);
+          if (sf.mq) { const ws = sf.mq.toLowerCase().split(/\s+/).filter(Boolean); list = list.filter(p => ws.every(w => (p.brand + " " + p.name + " " + (p.article || "")).toLowerCase().includes(w))); }
           $("#srCount", root).textContent = plural(list.length, "items");
+          const nf = (sf.dept !== "all" ? 1 : 0) + sf.sizes.length + sf.brands.length + (sf.min || sf.max ? 1 : 0);
+          const fnb = $("#srFn", root); fnb.hidden = !nf; fnb.textContent = nf;
+          $("#srApply", root).textContent = L("Показать ", "Show ") + plural(list.length, "items");
+          $("#srSortM", root).value = sf.sort;
+          if (!recDone) { recDone = true; const rec = popularPick(list, 10);
+            $("#srRec", root).innerHTML = rec.length > 2 ? `<div class="hsec-head"><div><h2>🔥 ${L("Вам может подойти", "You may like")}</h2><p class="muted">${L("Подборка популярных моделей", "Popular picks")}</p></div><a class="pill-more" href="#catalog" data-action="prefilter" data-sort="popular">${t("see_all")} <span aria-hidden="true">›</span></a></div><div class="hsec"><div class="rail">${rec.map(card).join("")}</div></div>` : ""; enhanceRails($("#srRec", root)); }
           $("#srCards", root).innerHTML = list.length ? list.slice(0, sf.shown).map(card).join("") : `<div class="empty"><p>${L("Ничего не нашлось. Попробуйте сбросить фильтры.", "Nothing found. Try resetting filters.")}</p></div>`;
           $("#srMore", root).hidden = list.length <= sf.shown;
           $$(".srch-dept", root).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.dept === sf.dept)));
@@ -1073,16 +1104,18 @@
           const d = e.target.closest(".srch-dept"); if (d) { sf.dept = sf.dept === d.dataset.dept ? "all" : d.dataset.dept; sf.sizes = []; sf.shown = 40; draw(); return; }
           const sy = e.target.closest(".srch-sys button"); if (sy) { sf.sys = sy.dataset.sys; draw(); return; }
           if (e.target.closest("#srMore")) { sf.shown += 40; draw(); return; }
-          if (e.target.closest("#srFt")) { $("#srSide", root).classList.toggle("is-open"); return; }
+          const op = e.target.closest("[data-open]"); if (op) { openSheet(op.dataset.open); return; }
+          if (e.target.closest("#srClose") || e.target.closest("#srBack") || e.target.closest("#srApply")) { closeSheet(); return; }
           if (e.target.closest("#srReset")) { Object.assign(sf, { dept: "all", min: "", max: "", sizes: [], brands: [], bq: "", shown: 40 }); if ($("#srBq", root)) $("#srBq", root).value = ""; $("#srMin", root).value = ""; $("#srMax", root).value = ""; draw(); }
         });
         root.addEventListener("change", e => {
           if (e.target.closest(".srch-size")) { const v = e.target.value; sf.sizes = e.target.checked ? sf.sizes.concat(v) : sf.sizes.filter(x => x !== v); sf.shown = 40; draw(); }
-          if (e.target.id === "srSort") { sf.sort = e.target.value; draw(); }
+          if (e.target.id === "srSort" || e.target.id === "srSortM") { sf.sort = e.target.value; if ($("#srSort", root)) $("#srSort", root).value = sf.sort; draw(); }
           if (e.target.closest(".srch-brand")) { const v = e.target.value; sf.brands = e.target.checked ? sf.brands.concat(v) : sf.brands.filter(x => x !== v); sf.shown = 40; draw(); }
         });
         let tm;
         root.addEventListener("input", e => {
+          if (e.target.id === "srMq") { sf.mq = e.target.value.trim(); sf.shown = 40; clearTimeout(tm); tm = setTimeout(draw, 250); return; }
           if (e.target.id === "srBq") { sf.bq = e.target.value; clearTimeout(tm); tm = setTimeout(draw, 200); return; }
           if (e.target.id === "srMin" || e.target.id === "srMax") {
             const d = e.target.value.replace(/\D/g, ""); e.target.value = d ? Number(d).toLocaleString("ru-RU") : "";
@@ -1090,6 +1123,7 @@
             clearTimeout(tm); tm = setTimeout(draw, 300);
           }
         });
+        $("#srMs", root).addEventListener("submit", e => { e.preventDefault(); sf.mq = $("#srMq", root).value.trim(); draw(); });
         draw();
       }
     };
