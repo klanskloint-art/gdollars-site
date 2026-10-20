@@ -68,6 +68,8 @@ window.GD_CONFIG = {
   // With it, brand cards load the brands' logos by website domain (list in data/brand-domains.js).
   // Free plan for a shop requires the "Logos provided by Logo.dev" link — it is added to the footer automatically.
   logoDevToken: "pk_euY7XDktSAKsmq6KkjDeyQ",
+  // Brandfetch Logo API client ID (public, free at developers.brandfetch.com): full brand logos like on Pont. Empty = logo.dev icons.
+  brandfetchClientId: "",
   // Price = official retail (retailUsd) minus belowRetail, but never lower than
   // the Poizon price (dewuCny) plus minMarginOverPoizon, so you don't sell at a loss.
   // Items without retailUsd use the category markups above.

@@ -2907,3 +2907,14 @@ body.is-sale .sale-land { padding-top: 34px; }
 @media (min-width: 761px) { .dot::after, .dot[aria-current="true"]::after { width: 40px !important; } }
 .dot::after { transform: none !important; left: calc(50% - 16px) !important; top: calc(50% - 2px) !important; }
 @media (min-width: 761px) { .dot::after { left: calc(50% - 20px) !important; } }
+
+/* v159: brands page like Pont — 7 square cards per row, logo centred, small grey name */
+.br-grid2 { gap: 12px !important; }
+@media (min-width: 720px) { .br-grid2 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; } }
+@media (min-width: 1100px) { .br-grid2 { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; gap: 14px !important; } }
+.br-card { aspect-ratio: 1 / 1; border: 1px solid #EDEDED !important; border-radius: 14px !important; background: #fff !important; padding: 12px 10px 14px !important; grid-template-rows: 1fr auto !important; }
+.br-card:hover { border-color: #CFCFCF !important; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,.06); }
+.br-card-name { font: 400 13px/1.25 Inter, sans-serif !important; color: #6B6B6B !important; text-align: center; }
+.br-card-mark .blogo { max-width: 66% !important; max-height: 58% !important; }
+.blogo.is-full { border-radius: 0 !important; }
+.btile-box .blogo.is-full { max-width: 84% !important; }

@@ -932,9 +932,13 @@
     const local = (window.BRAND_LOGOS_LOCAL || {})[name] || ((window.GD_BRANDS || []).find(b => b.name === name) || {}).logo;
     const dom = (window.GD_BRAND_DOMAINS || {})[name];
     const tok = CFG.logoDevToken;
-    const src = local || (tok && dom ? `https://img.logo.dev/${encodeURIComponent(dom)}?token=${encodeURIComponent(tok)}&size=200&format=png&retina=true&fallback=404` : "");
+    const ldev = tok && dom ? `https://img.logo.dev/${encodeURIComponent(dom)}?token=${encodeURIComponent(tok)}&size=200&format=png&retina=true&fallback=404` : "";
+    const bf = CFG.brandfetchClientId && dom ? `https://cdn.brandfetch.io/domain/${encodeURIComponent(dom)}/h/240/w/480/theme/light/fallback/404/logo.png?c=${encodeURIComponent(CFG.brandfetchClientId)}` : "";
+    const src = local || bf || ldev;
     if (!src) return wordmark(name);
-    return `<img class="blogo ${cls || ""}" src="${esc(src)}" alt="" ${eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"'} decoding="async" width="80" height="80" onerror="this.hidden=true;this.nextElementSibling.hidden=false">${wordmark(name).replace("<span ", "<span hidden ")}`;
+    // Brandfetch (full logo) → logo.dev (icon) → text wordmark
+    const next = !local && bf && ldev ? `if(!this.dataset.f){this.dataset.f=1;this.classList.add('is-icon');this.src='${ldev}';return;}` : "";
+    return `<img class="blogo${bf && !local ? " is-full" : ""} ${cls || ""}" src="${esc(src)}" alt="" referrerpolicy="strict-origin-when-cross-origin" ${eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"'} decoding="async" width="80" height="80" onerror="${esc(next)}this.hidden=true;this.nextElementSibling.hidden=false">${wordmark(name).replace("<span ", "<span hidden ")}`;
   }
   function wordmark(name) {
     // Plain text wordmark (no official logos): style varies a little by brand for a varied grid.
