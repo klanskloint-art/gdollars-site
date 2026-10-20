@@ -2763,3 +2763,22 @@ body.is-sale .sale-land { padding-top: 34px; }
 .bh-logo .blogo[hidden] ~ * { display: none !important; }
 @media (max-width: 600px) { .brand-hero.bh2 { padding-right: 104px; } .bh-logo { right: 14px; } .bh-logo .blogo { width: 76px !important; height: 76px !important; border-radius: 20px !important; } }
 @media (min-width: 761px) { .bh-logo { right: 40px; } .bh-logo .blogo { width: 128px !important; height: 128px !important; border-radius: 32px !important; } .brand-hero.bh2 { padding-right: 200px; } }
+
+/* Pont-like mobile header links and brand tiles (v150) */
+.hdr-links a.hl-m { display: none; }
+@media (max-width: 760px) {
+  .hdr-links { -webkit-mask: none !important; mask: none !important; gap: 16px !important; overflow: hidden; }
+  .hdr-links a { display: none; }
+  .hdr-links a.hl-m { display: inline; font-size: 15px !important; font-weight: 500 !important; color: #111 !important; }
+  .brail { grid-auto-columns: 121px !important; gap: 20px !important; }
+  .btile { width: 121px !important; gap: 10px !important; }
+  .btile-box { height: 64px !important; border-radius: 14px !important; padding: 0 8px !important; }
+  .btile-box .blogo { width: 52px !important; height: 52px !important; border-radius: 12px !important; box-shadow: none !important; filter: none !important; }
+  .btile-name { font-size: 15px; font-weight: 400; }
+}
+@media (max-width: 760px) {
+  .hdr-row { gap: 12px !important; }
+  .hdr-links { gap: 12px !important; }
+  .hdr-links a.hl-m { font-size: 14.5px !important; letter-spacing: -.01em; }
+}
+@media (max-width: 370px) { .hdr-links a.hl-m:first-child { display: none; } }

@@ -341,7 +341,7 @@
     $("#app").innerHTML = `
       <div class="appbar" id="appbar">
         <span class="appbar-ico" aria-hidden="true">${LOGO_MARK}</span>
-        <span class="appbar-t"><b>${state.lang === "ru" ? "Установите приложение G&Dllars" : "Install the G&Dllars app"}</b><span>${state.lang === "ru" ? "Значок на экране — магазин в одно касание" : "One tap from your home screen"}</span></span>
+        <span class="appbar-t"><b>${state.lang === "ru" ? "Установите приложение" : "Install the app"}</b><span>${state.lang === "ru" ? "Там быстрее, удобнее и всё под рукой" : "One tap from your home screen"}</span></span>
         <button type="button" class="appbar-soon appbar-install" id="appInstall">${state.lang === "ru" ? "Установить" : "Install"}</button>
       </div>
       <header class="hdr">
@@ -349,6 +349,9 @@
           <a class="menubtn" href="#shop" data-action="drawer-open" aria-label="${t("menu")}" aria-controls="drawer" aria-expanded="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></a>
           <a class="logo" href="#home" aria-label="${esc(CFG.brand)}, ${t("home")}">${logoHtml()}</a>
           <nav class="hdr-links" aria-label="${t("nav_label")}">
+            <a href="#delivery" class="hl-m">${state.lang === "ru" ? "Оплата" : "Payment"}</a>
+            <a href="#brands" class="hl-m">${t("nav_brands")}</a>
+            <a href="#contacts" class="hl-m">${state.lang === "ru" ? "Помощь" : "Help"}</a>
             <a href="#sale" class="hl-sale">${t("nav_sale")}</a>
             <a href="#brands">${t("nav_brands")}</a>
             <a href="#delivery">${t("del_short")}</a>
