@@ -75,7 +75,7 @@ window.GD_CONFIG = {
   // Poparce / poizon-api.com: live photos, sizes, stock and prices from Poizon.
   // token = your API key (sent in the "x-api-key" header). It is visible to anyone who opens the site's code.
   // fen: true = the API returns prices in fen (1/100 of a yuan), as Poizon does.
-  poparce: { token: "90e3fdd31a17", base: "https://empty-hill-838d.klanskloint.workers.dev", fen: true },
+  poparce: { token: "e330aa03-b888-4676-9cfc-90e3fdd31a17", base: "https://empty-hill-838d.klanskloint.workers.dev", fen: true },
   // Brandfetch Logo API client ID (public, free at developers.brandfetch.com): full brand logos like on Pont. Empty = logo.dev icons.
   brandfetchClientId: "1idn33yRl6lJI-lS95j",
   // Price = official retail (retailUsd) minus belowRetail, but never lower than
