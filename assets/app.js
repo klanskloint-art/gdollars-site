@@ -213,8 +213,9 @@
 
   function media(p, cls, eager) {
     const label = esc(p.brand + " " + p.name);
+    if (!p.images.length && window.GDPoparce && GDPoparce.on) { const c = GDPoparce.cachedImage(p); if (c) p.images = [c]; }
     if (p.images.length) {
-      return `<div class="${cls}"><img src="${esc(p.images[0])}" alt="${label}" ${eager ? "" : 'loading="lazy"'} data-pid="${esc(p.id)}"></div>`;
+      return `<div class="${cls}"><img src="${esc(p.images[0])}" alt="${label}" ${eager ? "" : 'loading="lazy"'} data-pid="${esc(p.id)}" referrerpolicy="no-referrer"></div>`;
     }
     return `<div class="${cls} pic" role="img" aria-label="${label}">${art(p.category, p.color)}</div>`;
   }
@@ -620,6 +621,7 @@
     document.title = view.title ? view.title + " · " + CFG.brand : CFG.brand;
     if (view.mount) view.mount(main);
     enhanceRails(main);
+    if (hash.startsWith("p-") && byId[hash.slice(2)]) liveProduct(byId[hash.slice(2)]);
     const ptOn = $(".ptab.is-on", main);
     if (ptOn) {
       // lime pill that slides from the previous tab to the new one, no page "reload" feel
@@ -1293,6 +1295,57 @@
     return `<a class="rail-more rail-more-${kind}" href="${href}"${g ? ` data-action="prefilter" data-g="${esc(g)}"` : ""}>
       <span class="rail-more-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
       <span class="rail-more-t">${label}</span></a>`;
+  }
+
+
+  // ===== Poparce live data =====
+  // Cards: when a card without a photo scrolls into view, look the model up on Poizon and show its photo.
+  const ppSeen = new WeakSet();
+  const ppIO = ("IntersectionObserver" in window) ? new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      ppIO.unobserve(en.target);
+      const a = en.target.querySelector("a.card-link"), art = en.target.querySelector(".card-art.pic");
+      const p = a && byId[(a.getAttribute("href") || "").replace(/^#p-/, "")];
+      if (!p || !art) return;
+      GDPoparce.match(p).then(m => {
+        if (!m || !m.img) return;
+        if (!p.images.length) p.images = [m.img];
+        if (!p.spuId) p.spuId = m.spuId;
+        const box = en.target.querySelector(".card-art.pic");
+        if (box) box.outerHTML = media(p, "card-art");
+      }).catch(() => {});
+    });
+  }, { rootMargin: "200px" }) : null;
+  function liveCards(root) {
+    if (!ppIO || !window.GDPoparce || !GDPoparce.on || GDPoparce.status()) return;
+    $$(".card", root).forEach(c => { if (!ppSeen.has(c) && c.querySelector(".card-art.pic")) { ppSeen.add(c); ppIO.observe(c); } });
+  }
+  if (window.GDPoparce && GDPoparce.on) {
+    let mt;
+    new MutationObserver(() => { clearTimeout(mt); mt = setTimeout(() => liveCards(document), 120); }).observe(document.getElementById("app") || document.body, { childList: true, subtree: true });
+  }
+
+  // Product page: real photos, sizes with stock, current price (→ сум with the category markup).
+  function liveProduct(p) {
+    if (!window.GDPoparce || !GDPoparce.on || p._live) return;
+    const info = $(".pdp-info") || $("#main");
+    const note = document.createElement("p");
+    note.className = "pp-live"; note.textContent = state.lang === "ru" ? "Проверяем наличие и цены на Poizon…" : "Checking Poizon stock and prices…";
+    if (info) info.prepend(note);
+    GDPoparce.full(p).then(d => {
+      note.remove();
+      if (!d) { p._live = "none"; return; }
+      if (d.images.length) p.images = d.images;
+      if (d.sizes.length) { p.sizes = d.sizes; p.sizeCny = d.sizeCny; p.soldOut = d.soldOut; }
+      if (d.minCny > 0) { p.dewuCny = d.minCny; const pr = retailPrice(p.category, p.dewuCny); if (pr) p.price = pr; }
+      if (!d.anyStock) p.soldOut = p.sizes.slice();
+      if (!p.article && d.article) p.article = d.article;
+      p.spuId = d.spuId; p.est = false; p.live = true; p._live = true;
+      const sel = state.sizes[p.id];
+      if (sel && (!p.sizes.includes(sel) || isSoldOut(p, sel))) delete state.sizes[p.id];
+      if (location.hash === "#p-" + p.id) rerender();
+    }).catch(() => { note.remove(); });
   }
 
   // Brand page banner in the brand's own colours (bg, accent); unknown brands get a calm colour from a fixed palette.
@@ -3052,6 +3105,7 @@
       <a class="back" href="#admin">← ${t("adm_title")}</a>
       <div class="page-head"><h1>Импорт товаров с Poizon</h1>
         <p class="muted prose">Загрузите JSON-выгрузку из официального источника Poizon (API партнёра, фид или ваш экспорт). Импортируются только товары брендов, которые уже есть в магазине (${fmt(myBrands)}), остальные пропускаются. Для каждого товара берутся все фото, модель, артикул и актуальная цена.</p></div>
+      <div class="pz-box pp-test"><b>Poparce API</b><span class="muted small" id="ppStat">${window.GDPoparce && GDPoparce.on ? "Токен указан в config.js" : "Токен не указан (config.js → poparce.token)"}</span><button type="button" class="btn btn-outline" id="ppTest">Проверить подключение</button><button type="button" class="btn btn-ghost" id="ppClear">Очистить кеш фото</button></div>
       <div class="pz-box">
         <label class="pz-drop" id="pzDrop"><input type="file" id="pzFile" accept=".json,application/json" hidden>
           <b>Выбрать JSON-файл</b><span>или перетащите его сюда</span></label>
@@ -3064,6 +3118,13 @@
     return {
       html, title: "Импорт с Poizon",
       mount(root) {
+        $("#ppTest", root).addEventListener("click", async () => {
+          const st = $("#ppStat", root); st.textContent = "Проверяем…";
+          try { const r = await GDPoparce.test(); const l = (r && (r.productList || r.list)) || [];
+            st.innerHTML = l.length ? `✅ Работает: найдено ${esc(String(r.total || l.length))} · пример: ${esc(l[0].title || "")}` : "⚠️ Ответ пришёл, но товаров нет: " + esc(JSON.stringify(r).slice(0, 200)); }
+          catch (e) { st.textContent = "❌ " + (GDPoparce.status() || e.message); }
+        });
+        $("#ppClear", root).addEventListener("click", () => { GDPoparce.clearCache(); toast("Кеш очищен"); });
         if (!PZ) { $("#pzOut", root).innerHTML = `<div class="empty"><p>Модуль импорта не загрузился.</p></div>`; return; }
         let last = null;
         const prog = $("#pzProg", root), fill = $("#pzBarFill", root), progT = $("#pzProgT", root), out = $("#pzOut", root);

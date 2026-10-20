@@ -72,6 +72,10 @@ window.GD_CONFIG = {
   // With it, brand cards load the brands' logos by website domain (list in data/brand-domains.js).
   // Free plan for a shop requires the "Logos provided by Logo.dev" link — it is added to the footer automatically.
   logoDevToken: "pk_euY7XDktSAKsmq6KkjDeyQ",
+  // Poparce / poizon-api.com: live photos, sizes, stock and prices from Poizon.
+  // token = your API key (sent in the "x-api-key" header). It is visible to anyone who opens the site's code.
+  // fen: true = the API returns prices in fen (1/100 of a yuan), as Poizon does.
+  poparce: { token: "90e3fdd31a17", base: "https://poizon-api.com/api/dewu", fen: true },
   // Brandfetch Logo API client ID (public, free at developers.brandfetch.com): full brand logos like on Pont. Empty = logo.dev icons.
   brandfetchClientId: "1idn33yRl6lJI-lS95j",
   // Price = official retail (retailUsd) minus belowRetail, but never lower than

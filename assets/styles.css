@@ -3043,3 +3043,10 @@ body.is-sale .sale-land { padding-top: 34px; }
   .brail { grid-auto-columns: calc((100% - 176px) / 12) !important; }
   .grid:not(.srch-cards) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
+
+/* v170: Poparce live data */
+.pp-live { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: #555; background: #F4F4F4; border-radius: 999px; padding: 6px 12px; margin: 0 0 10px; }
+.pp-live::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #BDFF14; border-top-color: #111; animation: ppSpin .8s linear infinite; }
+@keyframes ppSpin { to { transform: rotate(360deg); } }
+.pp-test { display: flex !important; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.pp-test .btn { min-height: 40px; height: auto; padding: 8px 14px; font-size: 14px; }
