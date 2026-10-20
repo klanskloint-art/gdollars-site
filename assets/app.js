@@ -1146,6 +1146,29 @@
     };
   }
 
+  // Brand page banner in the brand's own colours (bg, accent); unknown brands get a calm colour from a fixed palette.
+  const BRAND_COLORS = {
+    "U.S. Polo Assn.": ["#14284B", "#C8102E"], "Nike": ["#111111", "#FA5400"], "Jordan": ["#B5122E", "#111111"], "Adidas": ["#0F0F0F", "#FFFFFF"],
+    "New Balance": ["#C8102E", "#F4F4EF"], "Asics": ["#001E62", "#00A3E0"], "Onitsuka Tiger": ["#0A2240", "#E8B92F"], "Puma": ["#B32025", "#FFFFFF"],
+    "Converse": ["#1D1D1B", "#E41D24"], "Vans": ["#C8102E", "#111111"], "Lacoste": ["#00553A", "#F4F4EF"], "Ralph Lauren": ["#041E42", "#C9A15B"],
+    "Tommy Hilfiger": ["#0B2A55", "#CC0C2F"], "Calvin Klein": ["#111111", "#BFBFBF"], "The North Face": ["#D7192D", "#111111"], "Stone Island": ["#151515", "#F2C200"],
+    "Moncler": ["#17284A", "#C8102E"], "Carhartt WIP": ["#9A6223", "#1A1A1A"], "Supreme": ["#DA291C", "#FFFFFF"], "Champion": ["#0B3C8C", "#D2232A"],
+    "Levi's": ["#C41230", "#F4F4EF"], "Under Armour": ["#1D1D1D", "#D0D0D0"], "Columbia": ["#00539B", "#9FD3F0"], "Arc'teryx": ["#121212", "#9A9A9A"],
+    "Gucci": ["#1B4D3E", "#C8102E"], "Prada": ["#111111", "#C9C9C9"], "Balenciaga": ["#0D0D0D", "#FFFFFF"], "Louis Vuitton": ["#4E3629", "#D4B27A"],
+    "Dior": ["#1A1A1A", "#D9CBB3"], "Timberland": ["#A3762B", "#1E1E1E"], "UGG": ["#5B4636", "#E8DCC8"], "Dr. Martens": ["#F5C400", "#111111"],
+    "Crocs": ["#2F7A3A", "#F4F4EF"], "Birkenstock": ["#1A2E5A", "#E8DCC8"], "Salomon": ["#121212", "#00A6D6"], "On": ["#1A1A1A", "#E5E5E5"],
+    "Hoka": ["#3346C4", "#FFD23F"], "Reebok": ["#D71920", "#1A1A1A"], "Casio": ["#003C8F", "#E6E6E6"], "Essentials": ["#BFB4A2", "#1E1E1E"],
+    "Stüssy": ["#111111", "#F4F4EF"], "Fila": ["#002D62", "#E4002B"], "Kappa": ["#111111", "#E4002B"], "Diesel": ["#B3001B", "#111111"]
+  };
+  const BH_PALETTE = [["#14284B", "#BDFF14"], ["#1B4D3E", "#E8DCC8"], ["#4E3629", "#E8B92F"], ["#3A2E5C", "#E7B9C6"], ["#0E3B43", "#7FD1C1"], ["#5C1A24", "#F4C9A8"], ["#22313F", "#F5A623"], ["#2E3A1F", "#D9E7A1"]];
+  function brandHeroStyle(name) {
+    const h = Array.from(name).reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const [bg, ac] = BRAND_COLORS[name] || BH_PALETTE[h % BH_PALETTE.length];
+    const lum = c => { const n = parseInt(c.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+    const fg = lum(bg) > 0.6 ? "#111111" : "#FFFFFF";
+    return `--bh-bg:${bg};--bh-ac:${ac};--bh-fg:${fg}`;
+  }
+
   function viewBrand(name) {
     const items = PRODUCTS.filter(p => p.brand === name);
     const info = BRANDS.find(b => b.name === name);
@@ -1155,7 +1178,8 @@
     const from = items.length ? Math.min.apply(null, items.map(p => p.price)) : null;
     const html = `<section class="wrap page">
       <a class="back" href="#brands">← ${t("nav_brands")}</a>
-      <div class="brand-hero">
+      <div class="brand-hero bh2" style="${brandHeroStyle(name)}">
+        ${CFG.logoDevToken && (window.GD_BRAND_DOMAINS || {})[name] ? `<span class="bh-logo">${brandLogo(name, "", true)}</span>` : ""}
         <span class="ad-eyebrow">${info && info.premium ? t("tier_premium") : t("brand_eyebrow")}</span>
         <h1>${esc(name)}</h1>
         <p>${items.length ? `${plural(items.length, "items")} · ${t("from", { price: money(from) })}` : t("br_order")}</p>
