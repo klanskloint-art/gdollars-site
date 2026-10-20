@@ -41,7 +41,7 @@
       queue.push(() => fetch(url, { headers: { "x-api-key": CFG.token, "Accept": "application/json" } })
         .then(async r => {
           if (r.status === 401) { disabledReason = "Токен не принят (401)"; throw new Error(disabledReason); }
-          if (!r.ok) throw new Error("HTTP " + r.status);
+          if (!r.ok) { let t = ""; try { t = (await r.text()).slice(0, 160); } catch (e) {} throw new Error("HTTP " + r.status + (t ? " — " + t : "") + (r.headers.get("x-upstream") ? " [" + r.headers.get("x-upstream") + "]" : "")); }
           return r.json();
         })
         .then(resolve, err => {
