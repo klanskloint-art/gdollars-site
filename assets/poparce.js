@@ -79,6 +79,7 @@
     list.forEach((x, i) => {
       const b = norm(x.brandName), t = norm(x.title) + " " + norm(x.seriesName);
       if (b && brand && !b.includes(brand) && !brand.includes(b)) return;
+      if (/定制|custom|改色|手绘|涂鸦/i.test(String(x.title || ""))) return; // skip custom / hand-painted pairs
       const hits = words.filter(w => t.includes(w)).length;
       const score = (words.length ? hits / words.length : 0) * 100 - i;
       if (score > bestScore) { best = x; bestScore = score; }
