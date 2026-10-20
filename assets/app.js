@@ -3138,7 +3138,8 @@
           <button type="button" class="btn btn-outline" id="ppSave" hidden>Скачать data/poparce-cache.js</button>
           <button type="button" class="btn btn-ghost" id="ppRecover">Восстановить из памяти браузера (0 запросов)</button></div>
         <div class="pp-bulk"><b>Импорт каталога с Poizon по брендам (настоящие товары)</b><span class="muted small">1 запрос = до 100 товаров одного бренда в одной категории: фото, название, артикул. Точная цена и размеры подгружаются, когда покупатель откроет товар.</span>
-          <label>Брендов (самые популярные) <input id="pcB" type="number" min="1" max="1196" value="30"></label>
+          <label>Брендов (самые популярные) <input id="pcB" type="number" min="1" max="1196" value="25"></label>
+          <label>Сколько товаров добавить <input id="pcN" type="number" min="1" max="20000" value="500"></label>
           <label><input type="checkbox" class="pcC" value="shoes" checked> Обувь</label><label><input type="checkbox" class="pcC" value="hoodies" checked> Худи</label>
           <label><input type="checkbox" class="pcC" value="tshirts" checked> Футболки</label><label><input type="checkbox" class="pcC" value="pants" checked> Штаны</label>
           <label><input type="checkbox" class="pcC" value="jackets"> Куртки</label><label><input type="checkbox" class="pcC" value="shorts"> Шорты</label>
@@ -3204,16 +3205,21 @@
           const rk = n => { const i = BRAND_RANK.indexOf(n); return i < 0 ? 9999 : i; };
           const brands = BRANDS.slice().sort((a, b) => rk(a.name) - rk(b.name) || (b.popular - a.popular) || (b.count - a.count)).slice(0, nb).map(b => b.name);
           const seen = new Set(pcItems.map(x => x.spuId));
-          const jobs = []; brands.forEach(b => cats.forEach(c => jobs.push([b, c])));
+          // interleave: every brand first gets one category, then the next round — mixed brands and categories early
+          const jobs = []; for (let r = 0; r < cats.length; r++) brands.forEach((b, bi) => jobs.push([b, cats[(bi + r) % cats.length]]));
+          const target = Math.max(1, +$("#pcN", root).value || 500);
+          const perQuery = Math.max(25, Math.min(100, Math.ceil(target / Math.max(1, jobs.length)))); // ~25 per query → few requests
           btn.disabled = true; let added = 0, used = 0;
-          for (let i = 0; i < jobs.length; i++) {
+          for (let i = 0; i < jobs.length && added < target; i++) {
             const [brand, cat] = jobs[i];
             prog.textContent = `${i + 1} / ${jobs.length} · ${brand} · ${catName(cat)} · добавлено ${added} · запросов ${used}`;
             try {
               const res = await GDPoparce.search(brand + " " + CAT_ZH[cat], 100); used++;
               const list = [].concat((res && (res.productList || res.list)) || []).filter(Boolean);
               const bn = normB(brand);
+              let took = 0;
               list.forEach(x => {
+                if (added >= target || took >= perQuery) return;
                 const sid = x.spuId || x.productId; if (!sid || seen.has(sid)) return;
                 const xb = normB(x.brandName); if (!xb || !(xb.includes(bn) || bn.includes(xb))) return;
                 const title = String(x.title || "");
@@ -3223,13 +3229,14 @@
                 const name = cleanTitle(title, brand); if (!imgs.length || !name) return;
                 const fen = +(x.price || x.minSalePrice || 0);
                 seen.add(sid);
+                took++;
                 pcItems.push({ id: "pz" + sid, spuId: sid, brand, name, category: cat, article: x.articleNumber && /[A-Za-z0-9]/.test(x.articleNumber) ? x.articleNumber : "", images: imgs.slice(0, 4), dewuCny: fen > 0 ? Math.round(fen / 100) : 0 });
                 added++;
               });
             } catch (e) { prog.textContent = "Остановлено: " + (GDPoparce.status() || e.message) + ` · добавлено ${added}`; if (GDPoparce.status() || /^HTTP/.test(String(e.message))) break; }
           }
           btn.disabled = false;
-          prog.textContent += ` — готово. Всего в каталоге: ${pcItems.length}`;
+          prog.textContent += ` — готово: добавлено ${added} настоящих товаров за ${used} запросов. Всего в каталоге: ${pcItems.length}`;
           $("#pcSave", root).hidden = !pcItems.length;
           if (pcItems.length) $("#pcSave", root).click();
         });
