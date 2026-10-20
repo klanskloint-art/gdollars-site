@@ -2651,7 +2651,7 @@
       const b = e.target.closest("[data-ls]"); if (!b) return;
       if (b.dataset.ls === "close") close();
       else if (b.dataset.ls === "tg") {
-        if (CFG.siteDomain && /\.netlify\.app$/.test(location.hostname) && location.hostname !== CFG.siteDomain) { location.href = "https://" + CFG.siteDomain + "/#checkout"; return; }
+        if (CFG.siteUrl && /^https:/.test(location.protocol) && !/claude/.test(location.hostname) && location.hostname !== CFG.siteDomain) { location.href = CFG.siteUrl + "#checkout"; return; }
         const cfg = await telegramConfig();
         if (cfg) { location.replace(telegramLoginUrl(cfg)); return; }
         close(); location.hash = "#checkout"; // no Telegram here (preview): name/phone form on the checkout page
@@ -2731,9 +2731,9 @@
         if (CFG.googleClientId && $("#gBtn", root)) mountGoogle($("#gBtn", root));
         const toggle = on => { form.hidden = !on; if (rows) rows.hidden = on; btn.hidden = on; if (extra) extra.hidden = on; if (on) $("#pName").focus(); };
         btn.addEventListener("click", async () => {
-          if (btn.id === "loginBtn" && CFG.siteDomain && /\.netlify\.app$/.test(location.hostname) && location.hostname !== CFG.siteDomain) {
+          if (btn.id === "loginBtn" && CFG.siteUrl && /^https:/.test(location.protocol) && !/claude/.test(location.hostname) && location.hostname !== CFG.siteDomain) {
             // Telegram login only works on the main address (the bot is bound to it): open it there.
-            location.href = "https://" + CFG.siteDomain + "/#account"; return;
+            location.href = CFG.siteUrl + "#account"; return;
           }
           if (btn.id === "loginBtn") {
             const cfg = await telegramConfig();

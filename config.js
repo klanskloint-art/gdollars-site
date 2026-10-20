@@ -60,7 +60,9 @@ window.GD_CONFIG = {
   // Domain linked to the bot in @BotFather (/setdomain). Telegram login only works on this domain.
   // Google sign-in: OAuth Client ID from console.cloud.google.com (…apps.googleusercontent.com). Empty = no Google button.
   googleClientId: "",
-  siteDomain: "capable-croissant-f6810c.netlify.app",
+  // Main site address. Telegram login works only here (bot domain set in @BotFather with /setdomain).
+  siteDomain: "klanskloint-art.github.io",
+  siteUrl: "https://klanskloint-art.github.io/gdollars-site/",
   // Owner: only these Telegram accounts can turn on owner mode (5 taps on the GD logo) on the real site.
   // Username without @, or the numeric Telegram ID.
   ownerTelegram: [],
