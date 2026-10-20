@@ -3154,9 +3154,13 @@
             prog.textContent = `${i + 1} / ${list.length} · найдено ${ok} · не найдено ${miss} · запросов ≈ ${used}`;
             try {
               const d = await GDPoparce.full(p); used += d ? 2 : 1;
-              if (d && (d.images.length || d.sizes.length)) { ppData[p.id] = { spuId: d.spuId, article: d.article, images: d.images.slice(0, 8), sizes: d.sizes, sizeCny: d.sizeCny, soldOut: d.soldOut, minCny: d.minCny, at: new Date().toISOString().slice(0, 10) }; ok++; }
+              if (d && ((d.images || []).length || (d.sizes || []).length)) { ppData[p.id] = { spuId: d.spuId, article: d.article, images: d.images.slice(0, 8), sizes: d.sizes, sizeCny: d.sizeCny, soldOut: d.soldOut, minCny: d.minCny, at: new Date().toISOString().slice(0, 10) }; ok++; }
               else miss++;
-            } catch (e) { prog.textContent = "Остановлено (возможно, закончились запросы): " + (GDPoparce.status() || e.message) + ` · сохранено ${Object.keys(ppData).length}`; break; }
+            } catch (e) {
+              // network / auth / limit problems stop the run; a single odd product is just skipped
+              if (GDPoparce.status() || /^HTTP (4|5)/.test(String(e.message || ""))) { prog.textContent = "Остановлено (возможно, закончились запросы): " + (GDPoparce.status() || e.message) + ` · сохранено ${Object.keys(ppData).length}`; break; }
+              miss++; used += 1;
+            }
           }
           btn.disabled = false;
           prog.textContent += ` — готово. Всего сохранено: ${Object.keys(ppData).length}`;

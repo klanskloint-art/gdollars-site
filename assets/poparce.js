@@ -80,7 +80,7 @@
     const words = norm(p.name).split(" ").filter(w => w.length > 1 || /\d/.test(w));
     let best = null, bestScore = -1;
     list.forEach((x, i) => {
-      const b = norm(x.brandName), t = norm(x.title) + " " + norm(x.seriesName);
+      const b = norm(x.brandName), t = norm(x.title || "") + " " + norm(x.seriesName);
       if (b && brand && !b.includes(brand) && !brand.includes(b)) return;
       if (/定制|custom|改色|手绘|涂鸦/i.test(String(x.title || ""))) return; // skip custom / hand-painted pairs
       if (/童|婴|kids|\b(gs|ps|td)\b|小童|中童|大童/i.test(String(x.title || ""))) return;   // skip kids' versions
@@ -96,7 +96,7 @@
     const key = "m:" + p.id, e = cache[key];
     if (fresh(e, TTL_MATCH)) return Promise.resolve(e.v);
     return get("/searchProducts", { keyword: keywordFor(p), limit: 20, page: 0 }).then(res => {
-      const x = pick(res && (res.productList || res.list || res.data), p);
+      const x = pick([].concat((res && (res.productList || res.list || (res.data && res.data.productList) || res.data)) || []).filter(Boolean), p);
       const v = x ? { spuId: x.spuId || x.productId, img: (Array.isArray(x.images) && x.images.find(isUrl)) || (isUrl(x.logoUrl) ? x.logoUrl : ""), title: x.title || "", article: x.articleNumber || "" } : null;
       cache[key] = { t: Date.now(), v }; persist();
       return v;
@@ -105,29 +105,30 @@
 
   // ---------- product detail: photos, sizes, stock, prices ----------
   function parseDetail(d) {
+    d = d && typeof d === "object" ? (d.data && !d.detail ? d.data : d) : {};
     const det = d.detail || {};
     const images = [];
     const imgs = (((d.image || {}).spuImage || {}).images) || [];
-    imgs.forEach(im => { const u = im && (im.url || im); if (isUrl(u) && !images.includes(u)) images.push(u); });
+    (Array.isArray(imgs) ? imgs : []).forEach(im => { const u = im && (im.url || im); if (isUrl(u) && !images.includes(u)) images.push(u); });
     if (!images.length && isUrl(det.logoUrl)) images.push(det.logoUrl);
 
     // sale properties: propertyValueId → { name, value }
     const props = {};
-    (((d.saleProperties || {}).list) || []).forEach(sp => { props[sp.propertyValueId] = sp; });
+    [].concat(((d.saleProperties || {}).list) || []).forEach(sp => { if (sp) props[sp.propertyValueId] = sp; });
     const isSizeProp = sp => sp && /尺码|码|size|尺寸|eu|us|uk/i.test(String(sp.name || "")) ;
 
     // per-sku price/stock from layerModel (when present)
     const skuInfo = {};
     const layer = (d.layerModel || {}).layer || (d.layerModel || {});
-    ((layer && layer.skuInfoList) || []).forEach(s => {
-      const ch = (s.tradeChannelInfoList || []).map(c => yuan(c.price)).filter(Boolean);
+    [].concat((layer && layer.skuInfoList) || []).forEach(s => { if (!s) return;
+      const ch = [].concat(s.tradeChannelInfoList || []).filter(Boolean).map(c => yuan(c.price)).filter(Boolean);
       const price = yuan(s.minPrice) || (ch.length ? Math.min.apply(null, ch) : 0) || yuan(s.finalPrice);
       skuInfo[s.skuId] = { price, qty: typeof s.remainQty === "number" ? s.remainQty : null };
     });
 
     const bySize = {};
-    (d.skus || []).forEach(sku => {
-      const ps = (sku.properties || []).map(pr => props[pr.propertyValueId]).filter(Boolean);
+    [].concat(d.skus || []).forEach(sku => { if (!sku) return;
+      const ps = [].concat(sku.properties || []).filter(Boolean).map(pr => props[pr.propertyValueId]).filter(Boolean);
       const sp = ps.find(isSizeProp) || ps[ps.length - 1];
       const size = cleanSize(sp && sp.value);
       if (!size) return;
@@ -161,7 +162,7 @@
   function full(p) {
     const adult = v => {
       if (!v || !(v.minCny > 0)) return null;                                   // no offers on Poizon now
-      if ((p.category || "") === "shoes") { const n = v.sizes.map(parseFloat).filter(x => !isNaN(x)); if (n.length && Math.max.apply(null, n) < 37) return null; }
+      if ((p.category || "") === "shoes") { const n = (v.sizes || []).map(parseFloat).filter(x => !isNaN(x)); if (n.length && Math.max.apply(null, n) < 37) return null; }
       return v;
     };
     const go = spuId => detail(spuId).then(adult);
