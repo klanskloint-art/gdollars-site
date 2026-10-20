@@ -873,10 +873,10 @@
 
         const promo = $(".promo", root);
         let paused = false;
-        promo.addEventListener("mouseenter", () => { paused = true; });
-        promo.addEventListener("mouseleave", () => { paused = false; });
-        promo.addEventListener("focusin", () => { paused = true; });
-        promo.addEventListener("focusout", () => { paused = false; });
+        promo.addEventListener("mouseenter", () => { paused = true; promo.classList.add("is-paused"); });
+        promo.addEventListener("mouseleave", () => { paused = false; promo.classList.remove("is-paused"); });
+        promo.addEventListener("focusin", () => { paused = true; promo.classList.add("is-paused"); });
+        promo.addEventListener("focusout", () => { paused = false; promo.classList.remove("is-paused"); });
 
         let startX = null;
         promo.addEventListener("touchstart", e => { startX = e.touches[0].clientX; }, { passive: true });
@@ -897,7 +897,6 @@
             elapsed += dt;
             if (elapsed >= SLIDE_MS) { elapsed = 0; show(current + 1); seen = current; }
           }
-          $$(".dot", root).forEach(d => d.style.setProperty("--p", d.getAttribute("aria-current") === "true" ? Math.min(1, elapsed / SLIDE_MS).toFixed(3) : 0));
           sliderRaf = requestAnimationFrame(tick);
         };
         if (!matchMedia("(prefers-reduced-motion: reduce)").matches) sliderRaf = requestAnimationFrame(tick);

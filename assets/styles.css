@@ -2898,3 +2898,12 @@ body.is-sale .sale-land { padding-top: 34px; }
 .dot { display: inline-grid !important; place-items: center; }
 .dot[aria-current="true"]::before { width: 32px !important; }
 @media (min-width: 761px) { .dot[aria-current="true"]::before { width: 40px !important; } }
+
+/* v158: progress fill is a pure CSS animation (GPU, perfectly smooth) */
+.dot::after { width: 32px !important; transform-origin: left center; scale: 0 1; will-change: scale; }
+.dot[aria-current="true"]::after { width: 32px !important; animation: dotFill 10s linear forwards; }
+.promo.is-paused .dot[aria-current="true"]::after { animation-play-state: paused; }
+@keyframes dotFill { from { scale: 0 1; } to { scale: 1 1; } }
+@media (min-width: 761px) { .dot::after, .dot[aria-current="true"]::after { width: 40px !important; } }
+.dot::after { transform: none !important; left: calc(50% - 16px) !important; top: calc(50% - 2px) !important; }
+@media (min-width: 761px) { .dot::after { left: calc(50% - 20px) !important; } }
