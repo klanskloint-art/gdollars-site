@@ -354,7 +354,7 @@
             <a href="#contacts" class="hl-m">${state.lang === "ru" ? "Помощь" : "Help"}</a>
             <a href="#sale" class="hl-sale">${t("nav_sale")}</a>
             <a href="#delivery">${t("del_short")}</a>
-            <a href="#catalog">${t("nav_wear")}</a>
+            <a href="#catalog-wear">${t("nav_wear")}</a>
             <a href="#catalog-shoes">${t("cat_shoes")}</a>
             <a href="#catalog-acc">${t("dept_acc")}</a>
             <a href="#catalog" data-action="collection" data-sort="new">${t("fresh")}</a>
@@ -400,7 +400,7 @@
               const row = ([h, k, ic, cls, sort]) => `<li><a href="${h}" class="${cls || ""}" data-action="drawer-close"${sort ? ` data-sort="${sort}"` : ""}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[ic]}</svg><span>${t(k)}</span></a></li>`;
               const groups = [
                 [["#home", "tab_home", "home"], ["#shop", "tab_shop", "shop"], ["#favorites", "nav_favs", "fav"], ["#account", "tab_account", "user"], ["#cart", "cart", "cart"]],
-                [["#sale", "nav_sale", "sale", "dl-sale"], ["#brands", "nav_brands", "brands"], ["#catalog-shoes", "cat_shoes", "shoe"], ["#catalog", "nav_wear", "wear"], ["#catalog-acc", "dept_acc", "acc"], ["#catalog", "fresh", "new", "", "new"]],
+                [["#sale", "nav_sale", "sale", "dl-sale"], ["#brands", "nav_brands", "brands"], ["#catalog-shoes", "cat_shoes", "shoe"], ["#catalog-wear", "nav_wear", "wear"], ["#catalog-acc", "dept_acc", "acc"], ["#catalog", "fresh", "new", "", "new"]],
                 [["#orders", "nav_orders", "box"], ["#delivery", "del_short", "truck"], ["#delivery", "dr_pay", "card"], ["#contacts", "dr_help", "help"]]
               ];
               return groups.map(g => g.map(row).join("")).join('<li class="dl-sep" aria-hidden="true"></li>');
@@ -586,7 +586,7 @@
 
     let view;
     if (hash === "home") view = viewHome();
-    else if (hash === "catalog" || hash.startsWith("catalog-")) view = viewCatalog(hash);
+    else if (hash === "catalog" || hash.startsWith("catalog-")) view = viewCatalogPont(hash);
     else if (hash.startsWith("p-")) view = viewProduct(hash.slice(2));
     else if (hash === "cart") view = viewCart();
     else if (hash === "checkout") view = viewCheckout();
@@ -1003,20 +1003,20 @@
     return sys === "US" ? fmt(n - 33) : sys === "UK" ? fmt(n - 33.5) : sys === "RU" ? fmt(n - 1) : String(z);
   }
   const DEPT = p => (p.category === "shoes" ? "shoes" : ACC.includes(p.category) ? "acc" : "wear");
-  function viewSearch(q) {
+  // Pont-style listing: crumbs, title + count, picture tiles, left filters (price, size EU/US/RU/UK), sort, 4-column grid.
+  function viewListing(cfg) {
     const L = (r, e) => (state.lang === "ru" ? r : e);
-    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
-    const hay = p => (p.brand + " " + p.name + " " + catName(p.category) + " " + code(p) + " " + (p.colorName ? p.colorName.ru + " " + p.colorName.en : "")).toLowerCase();
-    const all = PRODUCTS.filter(p => words.every(w => hay(p).includes(w)));
-    if (!state.sf || state.sf.q !== q) state.sf = { q, dept: "all", min: "", max: "", sys: "EU", sizes: [], sort: "rel", shown: 40 };
+    const all = cfg.all;
+    if (!state.sf || state.sf.q !== cfg.key) state.sf = { q: cfg.key, dept: "all", min: "", max: "", sys: "EU", sizes: [], sort: cfg.sort || "rel", shown: 40 };
     const sf = state.sf;
-    const depts = [["shoes", L("Обувь", "Shoes")], ["wear", L("Одежда", "Clothing")], ["acc", L("Аксессуары", "Accessories")]]
-      .map(([k, n]) => [k, n, all.filter(p => DEPT(p) === k)]).filter(d => d[2].length);
+    const tileFn = {}; 
+    const depts = cfg.tiles.map(([k, n, fn]) => { tileFn[k] = fn; return [k, n, all.filter(fn)]; }).filter(d => d[2].length);
+    const inTile = p => sf.dept === "all" || !tileFn[sf.dept] || tileFn[sf.dept](p);
     return {
-      title: L("Поиск", "Search") + ": " + q,
+      title: cfg.title,
       html: `<section class="wrap page srch">
-        <nav class="crumbs" aria-label="${t("crumbs")}"><a href="#home">${t("tab_home")}</a><span>›</span><span>${L("Поиск", "Search")}</span></nav>
-        <div class="srch-head"><h1>${L("Результаты по запросу", "Results for")} «${esc(q)}»</h1><p class="muted" id="srCount"></p></div>
+        <nav class="crumbs" aria-label="${t("crumbs")}">${cfg.crumbs}</nav>
+        <div class="srch-head"><h1>${cfg.h1}</h1><p class="muted" id="srCount"></p></div>
         <div class="srch-depts">${depts.map(([k, n, list]) => `<button type="button" class="srch-dept" data-dept="${k}" aria-pressed="${sf.dept === k}"><span class="srch-dept-pic">${media(list.find(p => p.images.length) || list[0], "sd-art")}</span><span>${n}</span></button>`).join("")}</div>
         <div class="srch-grid">
           <button type="button" class="srch-ftoggle" id="srFt">${L("Фильтры", "Filters")}</button>
@@ -1040,7 +1040,7 @@
       mount(root) {
         const num = v => Number(String(v).replace(/\D/g, "")) || 0;
         const draw = () => {
-          const base = all.filter(p => sf.dept === "all" || DEPT(p) === sf.dept);
+          const base = all.filter(inTile);
           const sizes = Array.from(new Set(base.flatMap(p => p.sizes))).filter(z => z !== "One size");
           const shoe = sizes.filter(z => SHOE_EU(z) !== null).sort((a, b) => SHOE_EU(a) - SHOE_EU(b));
           const rest = sizes.filter(z => SHOE_EU(z) === null);
@@ -1051,7 +1051,7 @@
           else if (sf.sort === "new") list = list.slice().sort((a, b) => (b.tags.includes("new") - a.tags.includes("new")) || a.order - b.order);
           else list = list.slice().sort((a, b) => (b.images.length > 0) - (a.images.length > 0) || (b.tags.includes("hit") - a.tags.includes("hit")) || a.order - b.order);
           $("#srCount", root).textContent = plural(list.length, "items");
-          $("#srCards", root).innerHTML = list.length ? list.slice(0, sf.shown).map(card).join("") : `<div class="empty"><p>${L("Ничего не нашлось. Попробуйте другое слово или сбросьте фильтры.", "Nothing found. Try another word or reset filters.")}</p></div>`;
+          $("#srCards", root).innerHTML = list.length ? list.slice(0, sf.shown).map(card).join("") : `<div class="empty"><p>${L("Ничего не нашлось. Попробуйте сбросить фильтры.", "Nothing found. Try resetting filters.")}</p></div>`;
           $("#srMore", root).hidden = list.length <= sf.shown;
           $$(".srch-dept", root).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.dept === sf.dept)));
           $$(".srch-sys button", root).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sys === sf.sys)));
@@ -1079,6 +1079,55 @@
       }
     };
   }
+  function viewSearch(q) {
+    const L = (r, e) => (state.lang === "ru" ? r : e);
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hay = p => (p.brand + " " + p.name + " " + catName(p.category) + " " + code(p) + " " + (p.colorName ? p.colorName.ru + " " + p.colorName.en : "")).toLowerCase();
+    return viewListing({
+      key: "q:" + q, all: PRODUCTS.filter(p => words.every(w => hay(p).includes(w))),
+      title: L("Поиск", "Search") + ": " + q,
+      crumbs: `<a href="#home">${t("tab_home")}</a><span>›</span><span>${L("Поиск", "Search")}</span>`,
+      h1: `${L("Результаты по запросу", "Results for")} «${esc(q)}»`,
+      tiles: [["shoes", L("Обувь", "Shoes"), p => DEPT(p) === "shoes"], ["wear", L("Одежда", "Clothing"), p => DEPT(p) === "wear"], ["acc", L("Аксессуары", "Accessories"), p => DEPT(p) === "acc"]]
+    });
+  }
+
+  // Catalog pages (Обувь / Одежда / Аксессуары / a category) in the same Pont layout, with sub-type tiles.
+  function viewCatalogPont(hash) {
+    const L = (r, e) => (state.lang === "ru" ? r : e);
+    const cat = hash.startsWith("catalog-") ? hash.slice(8) : "all";
+    const f = state.filters, g = f.gender && f.gender !== "all" ? f.gender : "";
+    const gOk = p => !g || p.gender === g || p.gender === "unisex";
+    const nm = p => (p.name || "").toLowerCase();
+    const isBoot = p => /boot|chukka|chelsea|1460|2976|jadon|6-inch|hiker|ботин/.test(nm(p));
+    const isSlide = p => /slide|clog|sandal|arizona|boston|milano|gizeh|zurich|slipper|tasman|tazz|calm|mule|adilette/.test(nm(p));
+    const isSport = p => /pegasus|vomero|alphafly|ultraboost|adizero|kayano|nimbus|novablast|clifton|bondi|mach|speedgoat|cloud|speedcross|xt-|xa pro|gt-2160|charged|response|run/.test(nm(p));
+    let all, h1, tiles;
+    if (cat === "shoes") {
+      all = PRODUCTS.filter(p => p.category === "shoes" && gOk(p)); h1 = L("Обувь", "Shoes");
+      tiles = [["snk", L("Кроссовки и кеды", "Sneakers"), p => !isBoot(p) && !isSlide(p) && !isSport(p)], ["sport", L("Обувь для спорта", "Sports shoes"), isSport], ["boots", L("Ботинки", "Boots"), isBoot], ["slides", L("Тапки и сандалии", "Slides & sandals"), isSlide]];
+    } else if (cat === "acc") {
+      all = PRODUCTS.filter(p => ACC.includes(p.category) && gOk(p)); h1 = L("Аксессуары", "Accessories");
+      tiles = ACC.map(c => [c, catName(c), p => p.category === c]);
+    } else if (cat === "all") {
+      all = PRODUCTS.filter(p => gOk(p)); h1 = f.sort === "new" ? t("fresh") : L("Каталог", "Catalog");
+      tiles = [["shoes", L("Обувь", "Shoes"), p => DEPT(p) === "shoes"], ["wear", L("Одежда", "Clothing"), p => DEPT(p) === "wear"], ["acc", L("Аксессуары", "Accessories"), p => DEPT(p) === "acc"]];
+    } else {
+      all = PRODUCTS.filter(p => p.category === cat && gOk(p)); h1 = catName(cat);
+      tiles = [];
+    }
+    if (cat === "wear") {
+      all = PRODUCTS.filter(p => DEPT(p) === "wear" && gOk(p)); h1 = L("Одежда", "Clothing");
+      tiles = CATS.filter(c => WEAR(c) && c !== "shoes").filter((c, i, a) => a.indexOf(c) === i).map(c => [c, catName(c), p => p.category === c]);
+    }
+    if (!all.length) return viewCatalog(hash);
+    return viewListing({
+      key: "c:" + cat + ":" + g + ":" + (f.sort || ""), all, sort: f.sort === "new" ? "new" : "rel", title: h1,
+      crumbs: `<a href="#home">${t("tab_home")}</a><span>›</span><a href="#catalog">${L("Каталог", "Catalog")}</a><span>›</span><span>${esc(h1)}</span>`,
+      h1: esc(h1), tiles
+    });
+  }
+
 
   function viewSale() {
     const list = PRODUCTS.filter(p => p.salePct).sort((a, b) => b.salePct - a.salePct || a.order - b.order);

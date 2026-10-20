@@ -2851,7 +2851,7 @@ body.is-sale .sale-land { padding-top: 34px; }
   .hdr-links a, .hdr-links a.hl-m { font: 500 15px/1.2 Inter, system-ui, sans-serif !important; color: #222 !important; letter-spacing: -.005em; }
   .hdr-links a.hl-sale { color: #DD2048 !important; order: 1; }
   .hdr-links a[href="#brands"] { order: 2; } .hdr-links a[href="#delivery"]:not(.hl-m) { order: 3; } .hdr-links a[href="#catalog-shoes"] { order: 4; }
-  .hdr-links a[href="#catalog"]:not([data-sort]) { order: 5; } .hdr-links a[href="#catalog-acc"] { order: 6; } .hdr-links a.hl-m[href="#delivery"] { order: 7; }
+  .hdr-links a[href="#catalog-wear"] { order: 5; } .hdr-links a[href="#catalog-acc"] { order: 6; } .hdr-links a.hl-m[href="#delivery"] { order: 7; }
   .hdr-links a[href="#contacts"] { order: 8; } .hdr-links a[data-sort] { order: 9; }
   .hdr-tools { order: 15; }
   .hdr-row > .search { order: 20; flex: 0 0 100%; max-width: 770px; margin: 0 auto; }
@@ -2918,3 +2918,8 @@ body.is-sale .sale-land { padding-top: 34px; }
 .br-card-mark .blogo { max-width: 66% !important; max-height: 58% !important; }
 .blogo.is-full { border-radius: 0 !important; }
 .btile-box .blogo.is-full { max-width: 84% !important; }
+
+/* v162: catalog in the Pont layout; product photos on white, contained */
+.srch-cards .card-art, .srch-cards .card-art-wrap { background: #fff !important; }
+.srch-cards .card-art img, .hsec .rail .card-art img { object-fit: contain !important; background: #fff !important; mix-blend-mode: multiply; }
+.srch-dept-pic { background: #fff; }
