@@ -3121,7 +3121,7 @@
       <div class="pz-box pp-test"><b>Poparce API</b><span class="muted small" id="ppStat">${window.GDPoparce && GDPoparce.on ? "Токен указан в config.js" : "Токен не указан (config.js → poparce.token)"}</span><button type="button" class="btn btn-outline" id="ppTest">Проверить подключение</button><button type="button" class="btn btn-ghost" id="ppClear">Очистить кеш фото</button>
         <div class="pp-bulk"><b>Загрузить с Poizon фото, размеры и цены</b><span class="muted small">Тратит 2 запроса на товар (поиск + карточка). Сначала самые популярные. Уже загруженные пропускаются.</span>
           <label>Раздел <select id="ppCat"><option value="shoes">Обувь</option><option value="wear">Одежда</option><option value="acc">Аксессуары</option><option value="all">Всё</option></select></label>
-          <label>Сколько товаров <input id="ppN" type="number" min="1" max="500" value="20"></label>
+          <label>Сколько товаров <input id="ppN" type="number" min="1" max="5000" value="200"></label>
           <button type="button" class="btn btn-primary" id="ppRun">Загрузить</button><span class="muted small" id="ppProg"></span>
           <button type="button" class="btn btn-outline" id="ppSave" hidden>Скачать data/poparce-cache.js</button></div></div>
       <div class="pz-box">
@@ -3145,7 +3145,7 @@
         $("#ppClear", root).addEventListener("click", () => { GDPoparce.clearCache(); toast("Кеш очищен"); });
         let ppData = Object.assign({}, window.GD_PP || {});
         $("#ppRun", root).addEventListener("click", async () => {
-          const btn = $("#ppRun", root), prog = $("#ppProg", root), n = Math.max(1, Math.min(500, +$("#ppN", root).value || 20)), cat = $("#ppCat", root).value;
+          const btn = $("#ppRun", root), prog = $("#ppProg", root), n = Math.max(1, Math.min(5000, +$("#ppN", root).value || 200)), cat = $("#ppCat", root).value;
           const pool = PRODUCTS.filter(p => (cat === "all" || DEPT(p) === cat) && !ppData[p.id]);
           const list = popularPick(pool, n);
           btn.disabled = true; let ok = 0, miss = 0, used = 0;
@@ -3156,11 +3156,12 @@
               const d = await GDPoparce.full(p); used += d ? 2 : 1;
               if (d && (d.images.length || d.sizes.length)) { ppData[p.id] = { spuId: d.spuId, article: d.article, images: d.images.slice(0, 8), sizes: d.sizes, sizeCny: d.sizeCny, soldOut: d.soldOut, minCny: d.minCny, at: new Date().toISOString().slice(0, 10) }; ok++; }
               else miss++;
-            } catch (e) { prog.textContent = "Остановлено: " + (GDPoparce.status() || e.message); break; }
+            } catch (e) { prog.textContent = "Остановлено (возможно, закончились запросы): " + (GDPoparce.status() || e.message) + ` · сохранено ${Object.keys(ppData).length}`; break; }
           }
           btn.disabled = false;
           prog.textContent += ` — готово. Всего сохранено: ${Object.keys(ppData).length}`;
           $("#ppSave", root).hidden = !Object.keys(ppData).length;
+          if (Object.keys(ppData).length) $("#ppSave", root).click();   // download right away
         });
         $("#ppSave", root).addEventListener("click", () => {
           const js = "// Poizon data saved from #admin-import. Replace data/poparce-cache.js with this file.\nwindow.GD_PP = " + JSON.stringify(ppData, null, 1) + ";\n";
