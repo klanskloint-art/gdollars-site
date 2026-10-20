@@ -61,7 +61,7 @@
   // ---------- helpers ----------
   const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9一-鿿]+/g, " ").trim();
   const yuan = v => { const n = Number(v); if (!(n > 0)) return 0; return Math.round(FEN ? n / 100 : n); };
-  const cleanSize = s => String(s || "").replace(/[　-鿿＀-￯()（）【】\[\]]+/g, " ").replace(/\s+/g, " ").trim();
+  const cleanSize = s => String(s || "").replace(/⅓/g, ".3").replace(/⅔/g, ".7").replace(/[　-鿿＀-￯()（）【】\[\]]+/g, " ").replace(/\s+/g, " ").trim();
   const isUrl = u => typeof u === "string" && /^https?:\/\//.test(u);
 
   // ---------- search: product → Poizon spu ----------
@@ -69,6 +69,9 @@
     if (p.article) return p.article;
     return [p.brand, p.name].join(" ").replace(/['"]/g, " ").replace(/\s+/g, " ").trim();
   }
+  const COLOR_ZH = { white: ["白"], black: ["黑"], grey: ["灰"], gray: ["灰"], navy: ["藏青", "深蓝", "海军蓝"], beige: ["米", "卡其"], brown: ["棕", "咖啡"],
+    olive: ["橄榄", "军绿"], burgundy: ["酒红", "暗红"], blue: ["蓝"], red: ["红"], green: ["绿"], cream: ["奶白", "米白"], "light blue": ["浅蓝", "天蓝"],
+    pink: ["粉"], mustard: ["芥末", "姜黄"], purple: ["紫"] };
   function pick(list, p) {
     if (!Array.isArray(list) || !list.length) return null;
     const art = norm(p.article);
@@ -80,8 +83,11 @@
       const b = norm(x.brandName), t = norm(x.title) + " " + norm(x.seriesName);
       if (b && brand && !b.includes(brand) && !brand.includes(b)) return;
       if (/定制|custom|改色|手绘|涂鸦/i.test(String(x.title || ""))) return; // skip custom / hand-painted pairs
+      if (/童|婴|kids|\b(gs|ps|td)\b|小童|中童|大童/i.test(String(x.title || ""))) return;   // skip kids' versions
       const hits = words.filter(w => t.includes(w)).length;
-      const score = (words.length ? hits / words.length : 0) * 100 - i;
+      const cz = COLOR_ZH[String((p.colorName && p.colorName.en) || "").toLowerCase()];
+      const colorHit = cz ? (cz.some(c => String(x.title || "").includes(c)) ? 20 : 0) : 0;
+      const score = (words.length ? hits / words.length : 0) * 100 + colorHit - i;
       if (score > bestScore) { best = x; bestScore = score; }
     });
     return bestScore >= 55 ? best : null;
@@ -153,7 +159,12 @@
     });
   }
   function full(p) {
-    const go = spuId => detail(spuId);
+    const adult = v => {
+      if (!v || !(v.minCny > 0)) return null;                                   // no offers on Poizon now
+      if ((p.category || "") === "shoes") { const n = v.sizes.map(parseFloat).filter(x => !isNaN(x)); if (n.length && Math.max.apply(null, n) < 37) return null; }
+      return v;
+    };
+    const go = spuId => detail(spuId).then(adult);
     if (p.spuId) return go(p.spuId);
     return match(p).then(m => (m ? go(m.spuId).then(v => Object.assign({ matchTitle: m.title }, v)) : null));
   }
