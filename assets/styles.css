@@ -3055,3 +3055,16 @@ body.is-sale .sale-land { padding-top: 34px; }
 .pp-bulk label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 .pp-bulk select, .pp-bulk input { height: 38px; border: 1px solid #E3E3E3; border-radius: 10px; padding: 0 10px; font: 14px Inter, sans-serif; }
 .pp-bulk input { width: 80px; }
+
+/* v181: product photos — calmer size, whole item visible, no crop */
+.pdp-media { background: #F6F6F6 !important; border: 0 !important; }
+.pdp-media img { object-fit: contain !important; padding: 6%; mix-blend-mode: multiply; }
+@media (min-width: 900px) {
+  .pdp { align-items: start; }
+  .pdp-gallery { position: sticky; top: 90px; max-width: 520px; width: 100%; justify-self: center; }
+  .pdp-media { max-height: 520px; }
+}
+@media (max-width: 899px) { .pdp-media { max-width: 300px; margin: 0 auto; width: 100%; } .thumbs { justify-content: center; } }
+.thumb { background: #F6F6F6 !important; }
+.thumb img { object-fit: contain !important; mix-blend-mode: multiply; }
+.card-art img { object-fit: contain !important; }

@@ -209,7 +209,7 @@
 
   const catName = c => t("cat_" + c);
   const sizeLabel = s => (s === "One size" ? t("one_size") : s);
-  const code = p => "GD-" + String(p.id).toUpperCase();
+  const code = p => p.article ? String(p.article) : "GD-" + String(p.id).toUpperCase();
   const count = () => state.cart.reduce((s, l) => s + l.qty, 0);
   const cartTotal = () => state.cart.reduce((s, l) => s + priceAt(byId[l.id], l.size) * l.qty, 0);
 
@@ -227,17 +227,23 @@
   }
   const telUrl = () => "tel:" + CFG.contacts.phone;
 
+  // Poizon CDN (Aliyun OSS) can resize on the fly: much lighter pictures, no lag.
+  function imgUrl(src, w) {
+    if (!/^https:\/\/cdn\.poizon\.com\//.test(src) || /x-oss-process/.test(src)) return src;
+    return src + (src.includes("?") ? "&" : "?") + "x-oss-process=image/resize,w_" + w + "/format,webp";
+  }
   function media(p, cls, eager) {
     const label = esc(p.brand + " " + p.name);
     if (!p.images.length && window.GDPoparce && GDPoparce.on) { const c = GDPoparce.cachedImage(p); if (c) p.images = [c]; }
     if (p.images.length) {
-      return `<div class="${cls}"><img src="${esc(p.images[0])}" alt="${label}" ${eager ? "" : 'loading="lazy"'} data-pid="${esc(p.id)}" referrerpolicy="no-referrer"></div>`;
+      return `<div class="${cls}"><img src="${esc(imgUrl(p.images[0], cls === "pdp-media" ? 900 : 420))}" alt="${label}" ${eager ? "" : 'loading="lazy"'} decoding="async" data-orig="${esc(p.images[0])}" data-pid="${esc(p.id)}" referrerpolicy="no-referrer"></div>`;
     }
     return `<div class="${cls} pic" role="img" aria-label="${label}">${art(p.category, p.color)}</div>`;
   }
 
   document.addEventListener("error", e => {
     const img = e.target;
+    if (img instanceof HTMLImageElement && img.dataset.orig && img.src !== img.dataset.orig && /x-oss-process/.test(img.src)) { img.src = img.dataset.orig; return; }
     if (!(img instanceof HTMLImageElement) || !img.dataset.pid) return;
     const p = byId[img.dataset.pid];
     const box = img.parentElement;
@@ -1669,7 +1675,7 @@
     const ask = t("ask_text", { name: p.brand + " " + p.name, code: code(p) });
     const meta = [colorName(p), t("gender_" + p.gender)].filter(Boolean).join(" · ");
     const thumbs = p.images.length > 1
-      ? `<div class="thumbs">${p.images.map((src, i) => `<button type="button" class="thumb" data-action="thumb" data-src="${esc(src)}" aria-pressed="${i === 0}" aria-label="${t("photo", { n: i + 1 })}"><img src="${esc(src)}" alt="" loading="lazy" data-pid="${esc(p.id)}"></button>`).join("")}</div>`
+      ? `<div class="thumbs">${p.images.map((src, i) => `<button type="button" class="thumb" data-action="thumb" data-src="${esc(imgUrl(src, 900))}" aria-pressed="${i === 0}" aria-label="${t("photo", { n: i + 1 })}"><img src="${esc(imgUrl(src, 140))}" alt="" loading="lazy" decoding="async" data-orig="${esc(src)}" data-pid="${esc(p.id)}" referrerpolicy="no-referrer"></button>`).join("")}</div>`
       : "";
 
     const html = `<section class="wrap page">
@@ -3628,7 +3634,7 @@
       rerender();
     } else if (action === "thumb") {
       const img = $(".pdp-media img");
-      if (img) img.src = el.dataset.src;
+      if (img) { img.dataset.orig = el.dataset.src.replace(/[?&]x-oss-process=[^&]*/, ""); img.src = el.dataset.src; }
       $$(".thumb").forEach(b => b.setAttribute("aria-pressed", String(b === el)));
     } else if (action === "copy") {
       const box = $("#" + el.dataset.target);
