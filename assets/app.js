@@ -1007,7 +1007,7 @@
   function viewListing(cfg) {
     const L = (r, e) => (state.lang === "ru" ? r : e);
     const all = cfg.all;
-    if (!state.sf || state.sf.q !== cfg.key) state.sf = { q: cfg.key, dept: "all", min: "", max: "", sys: "EU", sizes: [], sort: cfg.sort || "rel", shown: 40 };
+    if (!state.sf || state.sf.q !== cfg.key) state.sf = { q: cfg.key, dept: "all", min: "", max: "", sys: "EU", sizes: [], brands: [], bq: "", sort: cfg.sort || "rel", shown: 40 };
     const sf = state.sf;
     const tileFn = {}; 
     const depts = cfg.tiles.map(([k, n, fn]) => { tileFn[k] = fn; return [k, n, all.filter(fn)]; }).filter(d => d[2].length);
@@ -1026,6 +1026,9 @@
             <h3>${L("Размер", "Size")}</h3>
             <div class="srch-sys">${["EU", "US", "RU", "UK"].map(x => `<button type="button" data-sys="${x}" aria-pressed="${sf.sys === x}">${x}</button>`).join("")}</div>
             <div class="srch-sizes" id="srSizes"></div>
+            <h3 class="srch-bh">${L("Бренды", "Brands")}</h3>
+            <label class="srch-bq"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="srBq" type="search" placeholder="${L("Поиск бренда", "Search brand")}" value="${esc(sf.bq)}" autocomplete="off"></label>
+            <div class="srch-brands" id="srBrands"></div>
             <button type="button" class="srch-reset" id="srReset">${L("Сбросить фильтры", "Reset filters")}</button>
           </aside>
           <div class="srch-main">
@@ -1045,7 +1048,13 @@
           const shoe = sizes.filter(z => SHOE_EU(z) !== null).sort((a, b) => SHOE_EU(a) - SHOE_EU(b));
           const rest = sizes.filter(z => SHOE_EU(z) === null);
           $("#srSizes", root).innerHTML = shoe.concat(rest).slice(0, 80).map(z => `<label class="srch-size"><input type="checkbox" value="${esc(z)}" ${sf.sizes.includes(z) ? "checked" : ""}><span>${esc(sizeIn(sf.sys, z))}</span></label>`).join("") || `<p class="muted small">—</p>`;
-          let list = base.filter(p => (!sf.min || p.price >= num(sf.min)) && (!sf.max || p.price <= num(sf.max)) && (!sf.sizes.length || p.sizes.some(z => sf.sizes.includes(z) && !isSoldOut(p, z))));
+          const bc = {}; base.forEach(p => { bc[p.brand] = (bc[p.brand] || 0) + 1; });
+          const rk = n => { const i = BRAND_RANK.indexOf(n); return i < 0 ? 9999 : i; };
+          const bq = sf.bq.toLowerCase();
+          const blist = Object.keys(bc).filter(n => !bq || n.toLowerCase().includes(bq))
+            .sort((a, c) => (sf.brands.includes(c) - sf.brands.includes(a)) || (rk(a) - rk(c)) || (bc[c] - bc[a]) || a.localeCompare(c));
+          $("#srBrands", root).innerHTML = blist.slice(0, 60).map(n => `<label class="srch-brand"><input type="checkbox" value="${esc(n)}" ${sf.brands.includes(n) ? "checked" : ""}><span>${esc(n)}</span><i>${bc[n]}</i></label>`).join("") || `<p class="muted small">—</p>`;
+          let list = base.filter(p => (!sf.brands.length || sf.brands.includes(p.brand)) && (!sf.min || p.price >= num(sf.min)) && (!sf.max || p.price <= num(sf.max)) && (!sf.sizes.length || p.sizes.some(z => sf.sizes.includes(z) && !isSoldOut(p, z))));
           if (sf.sort === "asc") list = list.slice().sort((a, b) => a.price - b.price);
           else if (sf.sort === "desc") list = list.slice().sort((a, b) => b.price - a.price);
           else if (sf.sort === "new") list = list.slice().sort((a, b) => (b.tags.includes("new") - a.tags.includes("new")) || a.order - b.order);
@@ -1061,14 +1070,16 @@
           const sy = e.target.closest(".srch-sys button"); if (sy) { sf.sys = sy.dataset.sys; draw(); return; }
           if (e.target.closest("#srMore")) { sf.shown += 40; draw(); return; }
           if (e.target.closest("#srFt")) { $("#srSide", root).classList.toggle("is-open"); return; }
-          if (e.target.closest("#srReset")) { Object.assign(sf, { dept: "all", min: "", max: "", sizes: [], shown: 40 }); $("#srMin", root).value = ""; $("#srMax", root).value = ""; draw(); }
+          if (e.target.closest("#srReset")) { Object.assign(sf, { dept: "all", min: "", max: "", sizes: [], brands: [], bq: "", shown: 40 }); if ($("#srBq", root)) $("#srBq", root).value = ""; $("#srMin", root).value = ""; $("#srMax", root).value = ""; draw(); }
         });
         root.addEventListener("change", e => {
           if (e.target.closest(".srch-size")) { const v = e.target.value; sf.sizes = e.target.checked ? sf.sizes.concat(v) : sf.sizes.filter(x => x !== v); sf.shown = 40; draw(); }
           if (e.target.id === "srSort") { sf.sort = e.target.value; draw(); }
+          if (e.target.closest(".srch-brand")) { const v = e.target.value; sf.brands = e.target.checked ? sf.brands.concat(v) : sf.brands.filter(x => x !== v); sf.shown = 40; draw(); }
         });
         let tm;
         root.addEventListener("input", e => {
+          if (e.target.id === "srBq") { sf.bq = e.target.value; clearTimeout(tm); tm = setTimeout(draw, 200); return; }
           if (e.target.id === "srMin" || e.target.id === "srMax") {
             const d = e.target.value.replace(/\D/g, ""); e.target.value = d ? Number(d).toLocaleString("ru-RU") : "";
             sf.min = $("#srMin", root).value; sf.max = $("#srMax", root).value;
