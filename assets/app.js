@@ -70,7 +70,18 @@
   // Real Poizon imports replace generated look-alikes of the same brand + model.
   const POIZON_ITEMS = window.GDPoizon ? window.GDPoizon.storeItems() : [];
   const PZ_KEYS = new Set(POIZON_ITEMS.map(p => (p.brand + "|" + p.name).toLowerCase()));
-  const PRODUCTS = POIZON_ITEMS.concat((window.GD_PRODUCTS || []).filter(p => !(p.est && PZ_KEYS.has((p.brand + "|" + p.name).toLowerCase())))).concat(window.GD_FEED || []).map(p => Object.assign({}, p, { category: accSub(p) }))
+  // Saved Poizon data (photos, sizes, stock, price) — applied before prices are computed.
+  const applyPP = p => {
+    const d = (window.GD_PP || {})[p.id];
+    if (!d) return p;
+    return Object.assign({}, p, {
+      images: d.images && d.images.length ? d.images : p.images,
+      sizes: d.sizes && d.sizes.length ? d.sizes : p.sizes,
+      sizeCny: d.sizeCny || p.sizeCny, soldOut: d.soldOut || p.soldOut,
+      dewuCny: d.minCny > 0 ? d.minCny : p.dewuCny, spuId: d.spuId, article: p.article || d.article, est: false, live: true
+    });
+  };
+  const PRODUCTS = POIZON_ITEMS.concat((window.GD_PRODUCTS || []).filter(p => !(p.est && PZ_KEYS.has((p.brand + "|" + p.name).toLowerCase())))).concat(window.GD_FEED || []).map(applyPP).map(p => Object.assign({}, p, { category: accSub(p) }))
     .map((p, i) => Object.assign({}, p, {
       price: officialBased(p) || (typeof p.basePrice === "number" ? retailPrice(p.category, p.basePrice, p.currency) : retailPrice(p.category, p.dewuCny)),
       order: i, tags: p.tags || [], images: p.images || [], sizes: p.sizes && p.sizes.length ? p.sizes : ["One size"]
@@ -1318,7 +1329,7 @@
     });
   }, { rootMargin: "200px" }) : null;
   function liveCards(root) {
-    if (!ppIO || !window.GDPoparce || !GDPoparce.on || GDPoparce.status()) return;
+    if (!ppIO || !window.GDPoparce || !GDPoparce.on || GDPoparce.status() || !(CFG.poparce || {}).cards) return;
     $$(".card", root).forEach(c => { if (!ppSeen.has(c) && c.querySelector(".card-art.pic")) { ppSeen.add(c); ppIO.observe(c); } });
   }
   if (window.GDPoparce && GDPoparce.on) {
@@ -1328,7 +1339,9 @@
 
   // Product page: real photos, sizes with stock, current price (→ сум with the category markup).
   function liveProduct(p) {
-    if (!window.GDPoparce || !GDPoparce.on || p._live) return;
+    if (!window.GDPoparce || !GDPoparce.on || p._live || (window.GD_PP || {})[p.id]) return;
+    const ownerHere = (() => { try { return localStorage.getItem("gd_owner") === "1"; } catch (e) { return false; } })();
+    if (!((CFG.poparce || {}).live === true || ownerHere)) return;
     const info = $(".pdp-info") || $("#main");
     const note = document.createElement("p");
     note.className = "pp-live"; note.textContent = state.lang === "ru" ? "Проверяем наличие и цены на Poizon…" : "Checking Poizon stock and prices…";
@@ -3105,7 +3118,12 @@
       <a class="back" href="#admin">← ${t("adm_title")}</a>
       <div class="page-head"><h1>Импорт товаров с Poizon</h1>
         <p class="muted prose">Загрузите JSON-выгрузку из официального источника Poizon (API партнёра, фид или ваш экспорт). Импортируются только товары брендов, которые уже есть в магазине (${fmt(myBrands)}), остальные пропускаются. Для каждого товара берутся все фото, модель, артикул и актуальная цена.</p></div>
-      <div class="pz-box pp-test"><b>Poparce API</b><span class="muted small" id="ppStat">${window.GDPoparce && GDPoparce.on ? "Токен указан в config.js" : "Токен не указан (config.js → poparce.token)"}</span><button type="button" class="btn btn-outline" id="ppTest">Проверить подключение</button><button type="button" class="btn btn-ghost" id="ppClear">Очистить кеш фото</button></div>
+      <div class="pz-box pp-test"><b>Poparce API</b><span class="muted small" id="ppStat">${window.GDPoparce && GDPoparce.on ? "Токен указан в config.js" : "Токен не указан (config.js → poparce.token)"}</span><button type="button" class="btn btn-outline" id="ppTest">Проверить подключение</button><button type="button" class="btn btn-ghost" id="ppClear">Очистить кеш фото</button>
+        <div class="pp-bulk"><b>Загрузить с Poizon фото, размеры и цены</b><span class="muted small">Тратит 2 запроса на товар (поиск + карточка). Сначала самые популярные. Уже загруженные пропускаются.</span>
+          <label>Раздел <select id="ppCat"><option value="shoes">Обувь</option><option value="wear">Одежда</option><option value="acc">Аксессуары</option><option value="all">Всё</option></select></label>
+          <label>Сколько товаров <input id="ppN" type="number" min="1" max="500" value="20"></label>
+          <button type="button" class="btn btn-primary" id="ppRun">Загрузить</button><span class="muted small" id="ppProg"></span>
+          <button type="button" class="btn btn-outline" id="ppSave" hidden>Скачать data/poparce-cache.js</button></div></div>
       <div class="pz-box">
         <label class="pz-drop" id="pzDrop"><input type="file" id="pzFile" accept=".json,application/json" hidden>
           <b>Выбрать JSON-файл</b><span>или перетащите его сюда</span></label>
@@ -3125,6 +3143,30 @@
           catch (e) { st.textContent = "❌ " + (GDPoparce.status() || e.message); }
         });
         $("#ppClear", root).addEventListener("click", () => { GDPoparce.clearCache(); toast("Кеш очищен"); });
+        let ppData = Object.assign({}, window.GD_PP || {});
+        $("#ppRun", root).addEventListener("click", async () => {
+          const btn = $("#ppRun", root), prog = $("#ppProg", root), n = Math.max(1, Math.min(500, +$("#ppN", root).value || 20)), cat = $("#ppCat", root).value;
+          const pool = PRODUCTS.filter(p => (cat === "all" || DEPT(p) === cat) && !ppData[p.id]);
+          const list = popularPick(pool, n);
+          btn.disabled = true; let ok = 0, miss = 0, used = 0;
+          for (let i = 0; i < list.length; i++) {
+            const p = list[i];
+            prog.textContent = `${i + 1} / ${list.length} · найдено ${ok} · не найдено ${miss} · запросов ≈ ${used}`;
+            try {
+              const d = await GDPoparce.full(p); used += d ? 2 : 1;
+              if (d && (d.images.length || d.sizes.length)) { ppData[p.id] = { spuId: d.spuId, article: d.article, images: d.images.slice(0, 8), sizes: d.sizes, sizeCny: d.sizeCny, soldOut: d.soldOut, minCny: d.minCny, at: new Date().toISOString().slice(0, 10) }; ok++; }
+              else miss++;
+            } catch (e) { prog.textContent = "Остановлено: " + (GDPoparce.status() || e.message); break; }
+          }
+          btn.disabled = false;
+          prog.textContent += ` — готово. Всего сохранено: ${Object.keys(ppData).length}`;
+          $("#ppSave", root).hidden = !Object.keys(ppData).length;
+        });
+        $("#ppSave", root).addEventListener("click", () => {
+          const js = "// Poizon data saved from #admin-import. Replace data/poparce-cache.js with this file.\nwindow.GD_PP = " + JSON.stringify(ppData, null, 1) + ";\n";
+          const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([js], { type: "text/javascript" })); a.download = "poparce-cache.js";
+          document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        });
         if (!PZ) { $("#pzOut", root).innerHTML = `<div class="empty"><p>Модуль импорта не загрузился.</p></div>`; return; }
         let last = null;
         const prog = $("#pzProg", root), fill = $("#pzBarFill", root), progT = $("#pzProgT", root), out = $("#pzOut", root);

@@ -67,21 +67,24 @@
     if (!Array.isArray(list) || !list.length) return null;
     const art = norm(p.article);
     if (art) { const hit = list.find(x => norm(x.articleNumber) === art); if (hit) return hit; }
-    const words = norm(p.brand + " " + p.name).split(" ").filter(w => w.length > 1);
+    const brand = norm(p.brand);
+    const words = norm(p.name).split(" ").filter(w => w.length > 1 || /\d/.test(w));
     let best = null, bestScore = -1;
     list.forEach((x, i) => {
-      const t = norm(x.title);
-      const score = words.filter(w => t.includes(w)).length * 10 - i;
+      const b = norm(x.brandName), t = norm(x.title) + " " + norm(x.seriesName);
+      if (b && brand && !b.includes(brand) && !brand.includes(b)) return;
+      const hits = words.filter(w => t.includes(w)).length;
+      const score = (words.length ? hits / words.length : 0) * 100 - i;
       if (score > bestScore) { best = x; bestScore = score; }
     });
-    return bestScore >= 10 ? best : null;
+    return bestScore >= 55 ? best : null;
   }
   function match(p) {
     const key = "m:" + p.id, e = cache[key];
     if (fresh(e, TTL_MATCH)) return Promise.resolve(e.v);
-    return get("/searchProducts", { keyword: keywordFor(p), limit: 10, page: 0 }).then(res => {
+    return get("/searchProducts", { keyword: keywordFor(p), limit: 20, page: 0 }).then(res => {
       const x = pick(res && (res.productList || res.list || res.data), p);
-      const v = x ? { spuId: x.spuId, img: (Array.isArray(x.images) && x.images.find(isUrl)) || (isUrl(x.logoUrl) ? x.logoUrl : ""), title: x.title || "", article: x.articleNumber || "" } : null;
+      const v = x ? { spuId: x.spuId || x.productId, img: (Array.isArray(x.images) && x.images.find(isUrl)) || (isUrl(x.logoUrl) ? x.logoUrl : ""), title: x.title || "", article: x.articleNumber || "" } : null;
       cache[key] = { t: Date.now(), v }; persist();
       return v;
     });

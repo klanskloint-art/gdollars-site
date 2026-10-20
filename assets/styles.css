@@ -3050,3 +3050,8 @@ body.is-sale .sale-land { padding-top: 34px; }
 @keyframes ppSpin { to { transform: rotate(360deg); } }
 .pp-test { display: flex !important; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .pp-test .btn { min-height: 40px; height: auto; padding: 8px 14px; font-size: 14px; }
+.pp-bulk { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-top: 12px; border-top: 1px solid #EEE; margin-top: 4px; }
+.pp-bulk > b, .pp-bulk > span.muted:first-of-type { flex-basis: 100%; }
+.pp-bulk label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.pp-bulk select, .pp-bulk input { height: 38px; border: 1px solid #E3E3E3; border-radius: 10px; padding: 0 10px; font: 14px Inter, sans-serif; }
+.pp-bulk input { width: 80px; }
