@@ -2820,3 +2820,14 @@ body.is-sale .sale-land { padding-top: 34px; }
 .rail-more-btile .rail-more-ico { justify-self: stretch; }
 .rail-more-card { place-content: center stretch; }
 .rail-more-btile { place-content: start stretch !important; grid-template-columns: 1fr; }
+
+/* v152: header links scroll on all screens; delivery page — only icons/button pink */
+.hdr-links a.hl-m, .hdr-links a { display: inline !important; }
+.hdr-links { overflow-x: auto !important; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; scrollbar-width: none;
+  -webkit-mask: linear-gradient(90deg, #000 82%, transparent) !important; mask: linear-gradient(90deg, #000 82%, transparent) !important; padding-right: 24px; touch-action: pan-x; }
+.hdr-links a.hl-m { font-size: 15px !important; font-weight: 500 !important; color: #222 !important; }
+@media (max-width: 760px) { .hdr-links a { font-size: 14.5px !important; } .hdr-links a.hl-sale { color: #DD2048 !important; } }
+@media (max-width: 370px) { .hdr-links a.hl-m:first-child { display: inline !important; } }
+.dlv-hero { background: #F4F4F4 !important; }
+.dlv-hero > .wrap > p { color: #6B6B6B !important; }
+.dlv-step span { color: #7A7A7A !important; }

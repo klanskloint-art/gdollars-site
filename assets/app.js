@@ -353,7 +353,6 @@
             <a href="#brands" class="hl-m">${t("nav_brands")}</a>
             <a href="#contacts" class="hl-m">${state.lang === "ru" ? "Помощь" : "Help"}</a>
             <a href="#sale" class="hl-sale">${t("nav_sale")}</a>
-            <a href="#brands">${t("nav_brands")}</a>
             <a href="#delivery">${t("del_short")}</a>
             <a href="#catalog">${t("nav_wear")}</a>
             <a href="#catalog-shoes">${t("cat_shoes")}</a>
@@ -3351,6 +3350,11 @@
   if ("serviceWorker" in navigator && location.protocol === "https:" && !/claude|claudeusercontent/.test(location.hostname)) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
+  document.addEventListener("wheel", e => {
+    const n = e.target.closest && e.target.closest(".hdr-links");
+    if (!n || Math.abs(e.deltaY) <= Math.abs(e.deltaX) || n.scrollWidth <= n.clientWidth) return;
+    n.scrollLeft += e.deltaY; e.preventDefault();
+  }, { passive: false });
   document.addEventListener("click", async e => {
     if (!e.target.closest("#appInstall")) return;
     if (installEvt) { installEvt.prompt(); try { await installEvt.userChoice; } catch (er) {} installEvt = null; return; }
