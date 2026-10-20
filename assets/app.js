@@ -778,7 +778,7 @@
       </div>
 
       ${(() => {
-        const top = BRANDS.filter(b => pool.some(p => p.brand === b.name))
+        const inPool = new Set(pool.map(p => p.brand)); const top = BRANDS.filter(b => inPool.has(b.name))
           .sort((a, b) => (b.popular - a.popular) || (b.count - a.count)).slice(0, 14);
         if (!top.length) return "";
         return `<section class="sec hsec"><div class="wrap">
@@ -908,11 +908,9 @@
     const list = (window.GD_BRANDS || []).map(b => Object.assign({}, b));
     const known = new Set(list.map(b => b.name));
     PRODUCTS.forEach(p => { if (!known.has(p.brand)) { known.add(p.brand); list.push({ name: p.brand, popular: false, premium: false, group: "fashion" }); } });
-    list.forEach(b => {
-      const items = PRODUCTS.filter(p => p.brand === b.name);
-      b.count = items.length;
-      b.from = items.length ? Math.min.apply(null, items.map(p => p.price)) : null;
-    });
+    const agg = {};
+    PRODUCTS.forEach(p => { const a = agg[p.brand] || (agg[p.brand] = { n: 0, min: Infinity }); a.n++; if (p.price < a.min) a.min = p.price; });
+    list.forEach(b => { const a = agg[b.name]; b.count = a ? a.n : 0; b.from = a ? a.min : null; });
     // Only brands that have items in the catalog are shown.
     return list.filter(b => b.count > 0).sort((a, b) => a.name.localeCompare(b.name, "en"));
   })();
@@ -1469,6 +1467,7 @@
             <span id="pdpSplit">${splitLine(priceAt(p, sel))}</span>
           </div>
           <p class="pnote">${state.lang === "ru" ? "Обратите внимание: срок доставки указан ориентировочно — от оплаты до получения заказа." : "Please note: the delivery time is an estimate — from payment to receiving your order."} <a href="#delivery">${state.lang === "ru" ? "Подробнее." : "Learn more."}</a></p>
+          ${p.est ? `<p class="pnote">${state.lang === "ru" ? "Наличие этой расцветки и точную цену оператор подтвердит после оформления — до оплаты." : "The operator confirms this colorway and the exact price after checkout — before payment."}</p>` : ""}
           <button class="btn pbuy" type="button" data-action="add" data-id="${esc(p.id)}"><span class="pbuy-price">${money(priceAt(p, sel))}</span><span>${t("buy_short")}</span></button>
           <div class="acc acc-caps">
             <details open>
