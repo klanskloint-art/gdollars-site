@@ -933,7 +933,7 @@
     const dom = (window.GD_BRAND_DOMAINS || {})[name];
     const tok = CFG.logoDevToken;
     const ldev = tok && dom ? `https://img.logo.dev/${encodeURIComponent(dom)}?token=${encodeURIComponent(tok)}&size=200&format=png&retina=true&fallback=404` : "";
-    const bf = CFG.brandfetchClientId && dom ? `https://cdn.brandfetch.io/domain/${encodeURIComponent(dom)}/h/240/w/480/theme/light/fallback/404/logo.png?c=${encodeURIComponent(CFG.brandfetchClientId)}` : "";
+    const bf = CFG.brandfetchClientId && dom ? `https://cdn.brandfetch.io/domain/${encodeURIComponent(dom)}/h/240/w/480/theme/dark/fallback/404/logo.png?c=${encodeURIComponent(CFG.brandfetchClientId)}` : "";
     const src = local || bf || ldev;
     if (!src) return wordmark(name);
     // Brandfetch (full logo) → logo.dev (icon) → text wordmark
