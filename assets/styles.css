@@ -2889,3 +2889,12 @@ body.is-sale .sale-land { padding-top: 34px; }
 .btile-box .wm { overflow-wrap: normal; word-break: keep-all; font-size: 17px; }
 .btile-box .wm-long { font-size: 13px; }
 @media (min-width: 1024px) { .rail-wrap:has(.brail) .rail-nav-next { right: -36px; } .rail-wrap:has(.brail) .rail-nav-prev { left: -36px; } }
+
+/* v157: active dot fills smoothly from start to end over the slide time (same size) */
+.dot[aria-current="true"]::before { background: #D9D9D9 !important; }
+.dot::after { display: block !important; content: ""; position: absolute; left: 50%; top: 50%; height: 4px; border-radius: 999px; background: #0B0F0C; transform: translate(-16px, -50%) !important; width: 0; transition: none !important; }
+.dot[aria-current="true"]::after { width: calc(32px * var(--p, 0)) !important; }
+@media (min-width: 761px) { .dot::after { transform: translate(-20px, -50%) !important; } .dot[aria-current="true"]::after { width: calc(40px * var(--p, 0)) !important; } }
+.dot { display: inline-grid !important; place-items: center; }
+.dot[aria-current="true"]::before { width: 32px !important; }
+@media (min-width: 761px) { .dot[aria-current="true"]::before { width: 40px !important; } }

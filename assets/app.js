@@ -887,8 +887,8 @@
           if (Math.abs(dx) > 50) show(current + (dx < 0 ? 1 : -1));
         });
 
-        // 20-second slides; the active dot fills up while the slide is shown (pauses on hover)
-        const SLIDE_MS = 20000;
+        // 10-second slides; the active dot fills up while the slide is shown (pauses on hover)
+        const SLIDE_MS = 10000;
         let elapsed = 0, last = performance.now(), seen = current;
         const tick = now => {
           const dt = Math.min(now - last, 100); last = now;
@@ -2550,6 +2550,7 @@
       const b = e.target.closest("[data-ls]"); if (!b) return;
       if (b.dataset.ls === "close") close();
       else if (b.dataset.ls === "tg") {
+        if (CFG.siteDomain && /\.netlify\.app$/.test(location.hostname) && location.hostname !== CFG.siteDomain) { location.href = "https://" + CFG.siteDomain + "/#checkout"; return; }
         const cfg = await telegramConfig();
         if (cfg) { location.replace(telegramLoginUrl(cfg)); return; }
         close(); location.hash = "#checkout"; // no Telegram here (preview): name/phone form on the checkout page
@@ -2629,6 +2630,10 @@
         if (CFG.googleClientId && $("#gBtn", root)) mountGoogle($("#gBtn", root));
         const toggle = on => { form.hidden = !on; if (rows) rows.hidden = on; btn.hidden = on; if (extra) extra.hidden = on; if (on) $("#pName").focus(); };
         btn.addEventListener("click", async () => {
+          if (btn.id === "loginBtn" && CFG.siteDomain && /\.netlify\.app$/.test(location.hostname) && location.hostname !== CFG.siteDomain) {
+            // Telegram login only works on the main address (the bot is bound to it): open it there.
+            location.href = "https://" + CFG.siteDomain + "/#account"; return;
+          }
           if (btn.id === "loginBtn") {
             const cfg = await telegramConfig();
             if (cfg) { location.replace(telegramLoginUrl(cfg)); return; }
