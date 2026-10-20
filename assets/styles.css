@@ -2874,3 +2874,18 @@ body.is-sale .sale-land { padding-top: 34px; }
 .btile-box .blogo { max-height: 52px !important; }
 .br-card-mark .blogo { max-height: 96px !important; max-width: 70% !important; }
 @media (min-width: 761px) { .btile-box .blogo { max-height: 64px !important; } .br-card-mark .blogo { max-height: 120px !important; } }
+
+/* v156: plain colour slides + rail arrows a bit further out and nicer */
+.pslide-solo .slide-grid { display: grid !important; grid-template-columns: 1fr !important; place-items: center; }
+.ps-solo { display: grid; place-items: center; width: 100%; height: 100%; padding: 16px; text-align: center; }
+.pslide-solo h2 { font: 800 clamp(26px, 6vw, 56px)/1.05 Inter, sans-serif !important; letter-spacing: -.03em !important; color: #fff !important; margin: 0 !important; }
+.pslide-pink { background: linear-gradient(120deg, #FF2E7E 0%, #FF3B5C 100%) !important; }
+.pslide-blue { background: linear-gradient(120deg, #1EA7FF 0%, #00C2FF 100%) !important; }
+.rail-nav { width: 44px; height: 44px; background: #fff; border: 1px solid #ECECEC; box-shadow: 0 8px 22px rgba(0,0,0,.16); }
+.rail-nav svg { width: 22px; height: 22px; stroke-width: 2.6; }
+.rail-wrap:has(.rail) .rail-nav-next { right: -18px; } .rail-wrap:has(.rail) .rail-nav-prev { left: -18px; }
+@media (min-width: 1024px) { .rail-wrap:has(.rail) .rail-nav-next { right: -36px; } .rail-wrap:has(.rail) .rail-nav-prev { left: -36px; } .rail-nav { width: 50px; height: 50px; } }
+@media (max-width: 760px) { .rail-wrap:has(.rail) .rail-nav-next { right: -14px; } .rail-wrap:has(.rail) .rail-nav-prev { left: -14px; } .rail-nav { width: 38px; height: 38px; } .rail-nav svg { width: 19px; height: 19px; } }
+.btile-box .wm { overflow-wrap: normal; word-break: keep-all; font-size: 17px; }
+.btile-box .wm-long { font-size: 13px; }
+@media (min-width: 1024px) { .rail-wrap:has(.brail) .rail-nav-next { right: -36px; } .rail-wrap:has(.brail) .rail-nav-prev { left: -36px; } }

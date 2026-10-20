@@ -756,21 +756,11 @@
     const L = (r, e) => (state.lang === "ru" ? r : e);
     const FRAME = `<span class="ps-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></span>`;
     const slides = [{
-      cls: "pslide pslide-buyer",
-      body: `<div class="ps-text">
-          <span class="ps-eyebrow">${L("Запустили байер-сервис", "Buyer service is live")}</span>
-          <h2>${L("Привезём <em>любой</em> товар по скрину или ссылке", "We’ll bring <em>any</em> item from a screenshot or link")}</h2>
-          <a class="ps-btn" href="#link">${L("Подробнее", "Learn more")}</a>
-        </div>
-        <div class="ps-pic ps-pic-dark">${SNEAKER}${FRAME}</div>`
+      cls: "pslide pslide-solo pslide-pink",
+      body: `<div class="ps-solo"><h2>${L("Совсем ...", "Very ...")}</h2></div>`
     }, {
-      cls: "pslide pslide-app",
-      body: `<div class="ps-text">
-          <span class="ps-eyebrow">${L("Скоро · iOS и Android", "Soon · iOS & Android")}</span>
-          <h2>${L("Мобильное приложение <em>G&amp;Dllars</em>", "The <em>G&amp;Dllars</em> mobile app")}</h2>
-          <span class="ps-btn ps-btn-soft">${L("Скоро", "Soon")}</span>
-        </div>
-        <div class="ps-pic ps-pic-lime">${PHONE}</div>`
+      cls: "pslide pslide-solo pslide-blue",
+      body: `<div class="ps-solo"><h2>${L("Скоро...", "Soon...")}</h2></div>`
     }];
 
     const slideHtml = slides.map((s, i) => `<div class="slide ${s.cls}${i === 0 ? " is-on" : ""}" role="group" aria-roledescription="slide" aria-label="${i + 1} / ${slides.length}"${i ? ' aria-hidden="true"' : ""}><div class="slide-grid">${s.body}</div></div>`).join("");
@@ -897,8 +887,8 @@
           if (Math.abs(dx) > 50) show(current + (dx < 0 ? 1 : -1));
         });
 
-        // 7-second slides; the active dot fills up while the slide is shown (pauses on hover)
-        const SLIDE_MS = 7000;
+        // 20-second slides; the active dot fills up while the slide is shown (pauses on hover)
+        const SLIDE_MS = 20000;
         let elapsed = 0, last = performance.now(), seen = current;
         const tick = now => {
           const dt = Math.min(now - last, 100); last = now;
