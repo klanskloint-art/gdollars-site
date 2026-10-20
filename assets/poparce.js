@@ -175,6 +175,7 @@
     status: () => disabledReason,
     cachedImage: p => { const e = cache["m:" + p.id]; return e && e.v && e.v.img ? e.v.img : ""; },
     match, detail, full,
+    search: (keyword, limit) => get("/searchProducts", { keyword, limit: limit || 100, page: 0 }),
     test: () => get("/searchProducts", { keyword: "nike air force 1", limit: 3, page: 0 }),
     clearCache: () => { cache = {}; try { localStorage.removeItem(LS); } catch (e) {} }
   };

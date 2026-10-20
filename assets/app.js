@@ -81,7 +81,11 @@
       dewuCny: d.minCny > 0 ? d.minCny : p.dewuCny, spuId: d.spuId, article: p.article || d.article, est: false, live: true
     });
   };
-  const PRODUCTS = POIZON_ITEMS.concat((window.GD_PRODUCTS || []).filter(p => !(p.est && PZ_KEYS.has((p.brand + "|" + p.name).toLowerCase())))).concat(window.GD_FEED || []).map(applyPP).map(p => Object.assign({}, p, { category: accSub(p) }))
+  const isReal = p => !!((window.GD_PP || {})[p.id] || (p.images && p.images.length));
+  const PZCAT = (window.GD_PZCAT || []).map(p => Object.assign({ gender: "unisex", tags: [], live: true }, p, { noPrice: !(p.dewuCny > 0) }));
+  const BASE_ITEMS = (window.GD_PRODUCTS || []).filter(p => !(p.est && PZ_KEYS.has((p.brand + "|" + p.name).toLowerCase())))
+    .filter(p => !CFG.onlyReal || isReal(p));
+  const PRODUCTS = POIZON_ITEMS.concat(PZCAT).concat(BASE_ITEMS).concat(window.GD_FEED || []).map(applyPP).map(p => Object.assign({}, p, { category: accSub(p) }))
     .map((p, i) => Object.assign({}, p, {
       price: officialBased(p) || (typeof p.basePrice === "number" ? retailPrice(p.category, p.basePrice, p.currency) : retailPrice(p.category, p.dewuCny)),
       order: i, tags: p.tags || [], images: p.images || [], sizes: p.sizes && p.sizes.length ? p.sizes : ["One size"]
@@ -93,6 +97,7 @@
       return Object.assign(p, { oldPrice: p.price, salePct: pct, price: Math.ceil(p.price * (1 - pct / 100) / CFG.roundTo) * CFG.roundTo });
     })
     .filter(p => {
+      if (p.noPrice && p.price === null) { p.price = 0; return true; }   // real Poizon item, price asked live on its page
       if (p.price === null) console.warn("[G&Dllars] Hidden product (unknown category or missing dewuCny):", p.id);
       return p.price !== null;
     });
@@ -306,14 +311,15 @@
 
   function card(p) {
     const flag = p.tags.includes("new") ? t("flag_new") : "";
-    const sp = CFG.split && CFG.split.parts > 1 ? Math.ceil(p.price / CFG.split.parts / 100) * 100 : 0;
+    const sp = p.price && CFG.split && CFG.split.parts > 1 ? Math.ceil(p.price / CFG.split.parts / 100) * 100 : 0;
     return `<div class="card">
       <a class="card-link" href="#p-${esc(p.id)}">
         <div class="card-art-wrap">${media(p, "card-art")}${p.salePct ? `<span class="sale-badge">−${p.salePct}%</span>` : ""}${flag ? `<span class="flag${p.tags.includes("new") ? "" : " flag-hit"}">${flag}</span>` : ""}</div>
         ${flag ? `<span class="card-label">${flag}</span>` : ""}
         <span class="card-brand">${esc(p.brand)}</span>
         <span class="card-name"><span class="cn-brand">${esc(p.brand)} </span>${esc(p.name)}</span>
-        <span class="card-price${p.oldPrice ? " is-sale" : ""}">${hasSizePrices(p) ? `<small class="from">${state.lang === "ru" ? "от" : "from"}</small> ` : ""}${money(p.price)}${p.oldPrice ? ` <s>${money(p.oldPrice)}</s>` : ""}</span>
+        ${!p.price ? `<span class="card-price card-ask">${state.lang === "ru" ? "Цена — на странице товара" : "Price on the product page"}</span>` : ""}
+        <span class="card-price${p.oldPrice ? " is-sale" : ""}"${!p.price ? " hidden" : ""}>${hasSizePrices(p) ? `<small class="from">${state.lang === "ru" ? "от" : "from"}</small> ` : ""}${money(p.price)}${p.oldPrice ? ` <s>${money(p.oldPrice)}</s>` : ""}</span>
         ${sp ? `<span class="card-split"><span class="split-chip">${money(sp)} × ${CFG.split.parts}</span><span class="split-word">${t("split_word")}</span></span>` : ""}
         <span class="card-days">${ICON_GEM}${t("days_short", { days: CFG.deliveryDays })}</span>
       </a>
@@ -936,7 +942,7 @@
     const sum = {}; PRODUCTS.forEach(p => { sum[p.brand] = (sum[p.brand] || 0) + p.price; });
     list.forEach(b => { b.budget = !b.premium && b.count > 0 && sum[b.name] / b.count < 1300000; });
     // Only brands that have items in the catalog are shown.
-    return list.filter(b => b.count > 0).sort((a, b) => a.name.localeCompare(b.name, "en"));
+    return list.filter(b => CFG.onlyReal || b.count > 0).sort((a, b) => a.name.localeCompare(b.name, "en"));
   })();
   const brandLetter = name => {
     const ch = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase();
@@ -1341,7 +1347,7 @@
   function liveProduct(p) {
     if (!window.GDPoparce || !GDPoparce.on || p._live || (window.GD_PP || {})[p.id]) return;
     const ownerHere = (() => { try { return localStorage.getItem("gd_owner") === "1"; } catch (e) { return false; } })();
-    if (!((CFG.poparce || {}).live === true || ownerHere)) return;
+    if (!(p.noPrice || (CFG.poparce || {}).live === true || ownerHere)) return;
     const info = $(".pdp-info") || $("#main");
     const note = document.createElement("p");
     note.className = "pp-live"; note.textContent = state.lang === "ru" ? "Проверяем наличие и цены на Poizon…" : "Checking Poizon stock and prices…";
@@ -1351,14 +1357,14 @@
       if (!d) { p._live = "none"; return; }
       if (d.images.length) p.images = d.images;
       if (d.sizes.length) { p.sizes = d.sizes; p.sizeCny = d.sizeCny; p.soldOut = d.soldOut; }
-      if (d.minCny > 0) { p.dewuCny = d.minCny; const pr = retailPrice(p.category, p.dewuCny); if (pr) p.price = pr; }
+      if (d.minCny > 0) { p.dewuCny = d.minCny; const pr = retailPrice(p.category, p.dewuCny); if (pr) { p.price = pr; p.noPrice = false; } }
       if (!d.anyStock) p.soldOut = p.sizes.slice();
       if (!p.article && d.article) p.article = d.article;
       p.spuId = d.spuId; p.est = false; p.live = true; p._live = true;
       const sel = state.sizes[p.id];
       if (sel && (!p.sizes.includes(sel) || isSoldOut(p, sel))) delete state.sizes[p.id];
       if (location.hash === "#p-" + p.id) rerender();
-    }).catch(() => { note.remove(); });
+    }).catch(() => { note.textContent = state.lang === "ru" ? "Не удалось узнать цену. Напишите оператору — он подскажет." : "Couldn't get the price. Message the operator."; });
   }
 
   // Brand page banner in the brand's own colours (bg, accent); unknown brands get a calm colour from a fixed palette.
@@ -1701,13 +1707,13 @@
             <li><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 1 3.4 6.5L4 20l1.3-3.6A8 8 0 0 1 4 12z"/></svg><a href="${esc(tgUrl(t("ask_text", { name: p.brand + " " + p.name, code: code(p) })))}" target="_blank" rel="noopener">${state.lang === "ru" ? "Написать оператору" : "Message an operator"}</a></li>
           </ul>
           <div class="pbox">
-            <span class="pbox-price${p.oldPrice ? " is-sale" : ""}" id="pdpPrice">${!sel && hasSizePrices(p) ? `<small class="from">${state.lang === "ru" ? "от" : "from"}</small> ` : ""}${money(priceAt(p, sel))}${p.oldPrice ? ` <s>${money(p.oldPrice)}</s> <em class="sale-pct">−${p.salePct}%</em>` : ""}</span>
+            <span class="pbox-price${p.oldPrice ? " is-sale" : ""}" id="pdpPrice">${!p.price ? (state.lang === "ru" ? "Узнаём цену на Poizon…" : "Checking the Poizon price…") : !sel && hasSizePrices(p) ? `<small class="from">${state.lang === "ru" ? "от" : "from"}</small> ` : ""}${p.price ? money(priceAt(p, sel)) : ""}${p.oldPrice ? ` <s>${money(p.oldPrice)}</s> <em class="sale-pct">−${p.salePct}%</em>` : ""}</span>
             <span class="pbox-days">${state.lang === "ru" ? CFG.deliveryDays + " дней" : CFG.deliveryDays + " days"}</span>
-            <span id="pdpSplit">${splitLine(priceAt(p, sel))}</span>
+            <span id="pdpSplit">${p.price ? splitLine(priceAt(p, sel)) : ""}</span>
           </div>
           <p class="pnote">${state.lang === "ru" ? "Обратите внимание: срок доставки указан ориентировочно — от оплаты до получения заказа." : "Please note: the delivery time is an estimate — from payment to receiving your order."} <a href="#delivery">${state.lang === "ru" ? "Подробнее." : "Learn more."}</a></p>
           ${p.est ? `<p class="pnote">${state.lang === "ru" ? "Наличие этой расцветки и точную цену оператор подтвердит после оформления — до оплаты." : "The operator confirms this colorway and the exact price after checkout — before payment."}</p>` : ""}
-          <button class="btn pbuy" type="button" data-action="add" data-id="${esc(p.id)}"><span class="pbuy-price">${money(priceAt(p, sel))}</span><span>${t("buy_short")}</span></button>
+          <button class="btn pbuy" type="button" data-action="add" data-id="${esc(p.id)}"><span class="pbuy-price">${p.price ? money(priceAt(p, sel)) : "…"}</span><span>${t("buy_short")}</span></button>
           <div class="acc acc-caps">
             <details open>
               <summary>${t("pd_desc")}</summary>
@@ -3123,7 +3129,15 @@
           <label>Раздел <select id="ppCat"><option value="shoes">Обувь</option><option value="wear">Одежда</option><option value="acc">Аксессуары</option><option value="all">Всё</option></select></label>
           <label>Сколько товаров <input id="ppN" type="number" min="1" max="5000" value="200"></label>
           <button type="button" class="btn btn-primary" id="ppRun">Загрузить</button><span class="muted small" id="ppProg"></span>
-          <button type="button" class="btn btn-outline" id="ppSave" hidden>Скачать data/poparce-cache.js</button></div></div>
+          <button type="button" class="btn btn-outline" id="ppSave" hidden>Скачать data/poparce-cache.js</button></div>
+        <div class="pp-bulk"><b>Импорт каталога с Poizon по брендам (настоящие товары)</b><span class="muted small">1 запрос = до 100 товаров одного бренда в одной категории: фото, название, артикул. Точная цена и размеры подгружаются, когда покупатель откроет товар.</span>
+          <label>Брендов (самые популярные) <input id="pcB" type="number" min="1" max="1196" value="30"></label>
+          <label><input type="checkbox" class="pcC" value="shoes" checked> Обувь</label><label><input type="checkbox" class="pcC" value="hoodies" checked> Худи</label>
+          <label><input type="checkbox" class="pcC" value="tshirts" checked> Футболки</label><label><input type="checkbox" class="pcC" value="pants" checked> Штаны</label>
+          <label><input type="checkbox" class="pcC" value="jackets"> Куртки</label><label><input type="checkbox" class="pcC" value="shorts"> Шорты</label>
+          <label><input type="checkbox" class="pcC" value="bags"> Сумки</label><label><input type="checkbox" class="pcC" value="caps"> Кепки</label>
+          <button type="button" class="btn btn-primary" id="pcRun">Импортировать</button><span class="muted small" id="pcProg"></span>
+          <button type="button" class="btn btn-outline" id="pcSave" hidden>Скачать data/poizon-catalog.js</button></div></div>
       <div class="pz-box">
         <label class="pz-drop" id="pzDrop"><input type="file" id="pzFile" accept=".json,application/json" hidden>
           <b>Выбрать JSON-файл</b><span>или перетащите его сюда</span></label>
@@ -3166,6 +3180,56 @@
           prog.textContent += ` — готово. Всего сохранено: ${Object.keys(ppData).length}`;
           $("#ppSave", root).hidden = !Object.keys(ppData).length;
           if (Object.keys(ppData).length) $("#ppSave", root).click();   // download right away
+        });
+        // --- catalog import by brand × category (search only) ---
+        const CAT_ZH = { shoes: "鞋", hoodies: "卫衣", tshirts: "短袖T恤", pants: "长裤", jackets: "外套", shorts: "短裤", bags: "包", caps: "帽子" };
+        const normB = x => String(x || "").toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, "");
+        let pcItems = (window.GD_PZCAT || []).slice();
+        const cleanTitle = (t, brand) => {
+          let x = String(t || "").replace(/【[^】]*】|\[[^\]]*\]|（[^）]*）|\([^)]*\)/g, " ").replace(/[\u3000-\u9fff\uff00-\uffef]+/g, " ").replace(/\s+/g, " ").trim();
+          x = x.replace(new RegExp("^" + brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i"), "").trim();
+          return (x.match(/[A-Za-z]/g) || []).length >= 3 ? x.slice(0, 80) : "";
+        };
+        $("#pcRun", root).addEventListener("click", async () => {
+          const btn = $("#pcRun", root), prog = $("#pcProg", root);
+          const cats = $$(".pcC:checked", root).map(x => x.value);
+          const nb = Math.max(1, Math.min(1196, +$("#pcB", root).value || 30));
+          const rk = n => { const i = BRAND_RANK.indexOf(n); return i < 0 ? 9999 : i; };
+          const brands = BRANDS.slice().sort((a, b) => rk(a.name) - rk(b.name) || (b.popular - a.popular) || (b.count - a.count)).slice(0, nb).map(b => b.name);
+          const seen = new Set(pcItems.map(x => x.spuId));
+          const jobs = []; brands.forEach(b => cats.forEach(c => jobs.push([b, c])));
+          btn.disabled = true; let added = 0, used = 0;
+          for (let i = 0; i < jobs.length; i++) {
+            const [brand, cat] = jobs[i];
+            prog.textContent = `${i + 1} / ${jobs.length} · ${brand} · ${catName(cat)} · добавлено ${added} · запросов ${used}`;
+            try {
+              const res = await GDPoparce.search(brand + " " + CAT_ZH[cat], 100); used++;
+              const list = [].concat((res && (res.productList || res.list)) || []).filter(Boolean);
+              const bn = normB(brand);
+              list.forEach(x => {
+                const sid = x.spuId || x.productId; if (!sid || seen.has(sid)) return;
+                const xb = normB(x.brandName); if (!xb || !(xb.includes(bn) || bn.includes(xb))) return;
+                const title = String(x.title || "");
+                if (/定制|custom|改色|手绘|涂鸦|童|婴|kids/i.test(title)) return;
+                const imgs = [].concat(x.images || []).filter(u => typeof u === "string" && /^https?:/.test(u));
+                if (!imgs.length && x.logoUrl) imgs.push(x.logoUrl);
+                const name = cleanTitle(title, brand); if (!imgs.length || !name) return;
+                const fen = +(x.price || x.minSalePrice || 0);
+                seen.add(sid);
+                pcItems.push({ id: "pz" + sid, spuId: sid, brand, name, category: cat, article: x.articleNumber && /[A-Za-z0-9]/.test(x.articleNumber) ? x.articleNumber : "", images: imgs.slice(0, 4), dewuCny: fen > 0 ? Math.round(fen / 100) : 0 });
+                added++;
+              });
+            } catch (e) { prog.textContent = "Остановлено: " + (GDPoparce.status() || e.message) + ` · добавлено ${added}`; if (GDPoparce.status() || /^HTTP/.test(String(e.message))) break; }
+          }
+          btn.disabled = false;
+          prog.textContent += ` — готово. Всего в каталоге: ${pcItems.length}`;
+          $("#pcSave", root).hidden = !pcItems.length;
+          if (pcItems.length) $("#pcSave", root).click();
+        });
+        $("#pcSave", root).addEventListener("click", () => {
+          const js = "// Real Poizon products imported in #admin-import. Replace data/poizon-catalog.js with this file.\nwindow.GD_PZCAT = " + JSON.stringify(pcItems) + ";\n";
+          const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([js], { type: "text/javascript" })); a.download = "poizon-catalog.js";
+          document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
         });
         $("#ppSave", root).addEventListener("click", () => {
           const js = "// Poizon data saved from #admin-import. Replace data/poparce-cache.js with this file.\nwindow.GD_PP = " + JSON.stringify(ppData, null, 1) + ";\n";
@@ -3291,6 +3355,7 @@
       if (first) first.focus();
       return;
     }
+    if (byId[id] && !byId[id].price) { toast(state.lang === "ru" ? "Цена ещё загружается — подождите пару секунд" : "Price is still loading"); return; }
     if (byId[id] && isSoldOut(byId[id], size)) { toast(state.lang === "ru" ? "Этого размера сейчас нет" : "Size sold out"); return; }
     const line = state.cart.find(l => l.id === id && l.size === size);
     if (line) line.qty += 1;
