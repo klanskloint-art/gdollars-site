@@ -20,20 +20,22 @@ window.GD_CONFIG = {
 
   // retail = Poizon/Dewu price × (1 + markup) × cnyToUzs, rounded up to roundTo
   markups: {
-    shoes: 0.60,
-    pants: 0.64,
-    hoodies: 0.50,
-    tshirts: 0.70,
-    underwear: 0.52,
-    socks: 0.61,
-    jackets: 0.45,
-    shorts: 0.62,
-    beanies: 0.55,
-    bras: 0.47,
-    coats: 0.52,
-    // watches: you didn't name a markup yet; 40% is a placeholder, change it
+    // шапки, кепки и трусы +70%
+    beanies: 0.70, caps: 0.70, underwear: 0.70,
+    // обувь и футболки +65%
+    shoes: 0.65, tshirts: 0.65,
+    // кофты/худи и носки +62%
+    hoodies: 0.62, socks: 0.62,
+    // куртки и шорты +61% (пальто считаем как куртки)
+    jackets: 0.61, coats: 0.61, shorts: 0.61,
+    // штаны +57%
+    pants: 0.57,
+    // очки +53%
+    eyewear: 0.53,
+    // часы +40%
     watches: 0.40,
-    // accessories (bags, caps, belts, sunglasses, wallets): placeholder 50%, change it
+    // не указано — прежние значения: бра/топы, сумки, ремни, чемоданы и прочие аксессуары
+    bras: 0.47,
     accessories: 0.50
   },
 
