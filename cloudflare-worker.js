@@ -11,14 +11,16 @@ export default {
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
     const url = new URL(request.url);
-    if (!ALLOWED_PATHS.includes(url.pathname)) {
+    const shihuo = /^\/shihuo\/(by-article|price)\/[^/]+$/.test(url.pathname);
+    if (!shihuo && !ALLOWED_PATHS.includes(url.pathname)) {
       return new Response(JSON.stringify({ error: "path not allowed" }), { status: 404, headers: { ...cors, "content-type": "application/json" } });
     }
     const key = request.headers.get("x-api-key") || url.searchParams.get("key") || "";
     url.searchParams.delete("key");
     const reqBody = request.method === "POST" ? await request.text() : undefined;
+    const bases = shihuo ? ["https://poparce.ru/api"] : APIS;
     let last = null, lastBody = "", lastApi = "";
-    for (const api of APIS) {
+    for (const api of bases) {
       const res = await fetch(api + url.pathname + url.search, {
         method: request.method,
         headers: {
