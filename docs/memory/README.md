@@ -11,4 +11,4 @@
 7. `07-status-and-todo.md` — где остановились, открытые задачи. **Обновлять после каждой сессии.**
 8. `08-texts.md` — готовые письма (Poizon, Poparce).
 
-Резервные копии: вся история в git (каждый коммит = снимок сайта). Метки `backup-YYYY-MM-DD` — стабильные точки. Откат: `git checkout backup-2026-10-21 -- .` (или `git revert <commit>`).
+Резервные копии: вся история в git (каждый коммит = снимок сайта). Ветки `backup-YYYY-MM-DD` на GitHub — стабильные снимки (теги через прокси не пушатся). Откат: `git fetch origin backup-2026-10-21 && git checkout origin/backup-2026-10-21 -- .` (или `git revert <commit>`).
