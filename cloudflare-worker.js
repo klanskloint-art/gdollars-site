@@ -1,3 +1,5 @@
+// G&Dllars — Cloudflare Worker proxy for Poparce (poizon-api.com). Deployed as empty-hill-838d.klanskloint.workers.dev.
+// Paste into Cloudflare → Workers & Pages → empty-hill-838d → Edit code → Deploy.
 const APIS = ["https://poparce.ru/api/dewu", "https://poizon-api.com/api/dewu"];
 const ALLOWED_PATHS = ["/searchProducts", "/productDetail", "/productsDetailSimple", "/getCategories"];
 
@@ -17,6 +19,7 @@ export default {
     }
     const key = request.headers.get("x-api-key") || url.searchParams.get("key") || "";
     url.searchParams.delete("key");
+    if (shihuo) { url.searchParams.set("apiKey", key); url.searchParams.set("api_key", key); }
     const reqBody = request.method === "POST" ? await request.text() : undefined;
     const bases = shihuo ? ["https://poparce.ru/api"] : APIS;
     let last = null, lastBody = "", lastApi = "";
@@ -25,6 +28,9 @@ export default {
         method: request.method,
         headers: {
           "x-api-key": key,
+          "x-service-api-key": key,
+          "authorization": "Bearer " + key,
+          "cookie": "accessToken=" + key,
           "accept": "application/json",
           "content-type": request.headers.get("content-type") || "application/json",
           "user-agent": "Mozilla/5.0 (G&Dllars shop)"
